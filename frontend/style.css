@@ -2,7 +2,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
 body {
-    background-color: #3A7D3A; /* 浅绿色背景 */
+    background-color: #2A5D2A; /* 一个适中的绿色，您可以调整 */
     color: #fff;
 }
 
@@ -11,11 +11,11 @@ body {
     flex-direction: column;
     height: 100vh;
     width: 100vw;
-    padding: 10px;
+    padding: 8px; /* 整体边距减小 */
 }
 
 /* 通用横向排列容器 */
-.piles-row {
+.piles-row, .cards-container {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,150 +24,94 @@ body {
 
 /* --- 1. 对手牌墩区域 --- */
 #opponent-piles-display-area {
-    min-height: 70px; /* 减小一点 */
-    padding-bottom: 5px;
+    min-height: 70px;
+    padding-bottom: 8px;
+    width: 100%; /* 确保占满可用宽度 */
 }
-.opponent-pile-slot {
-    width: 65px; height: 85px;
-    background-color: rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.15);
+.opponent-pile-slot { /* 样式保持 */ }
+
+/* --- 2. 玩家的尾墩摆牌区 (蓝色标注 - 占满横幅) --- */
+#player-back-pile-zone {
+    width: 100%; /* 占满父容器宽度 */
+    min-height: 80px; /* 给尾墩区域一个高度 */
+    padding: 8px 0;
+    background-color: rgba(0, 0, 100, 0.2); /* 蓝色区域示意 */
+    display: flex; /* 使内部的墩居中 */
+    justify-content: center;
+    align-items: center;
     border-radius: 5px;
-    display: flex; justify-content: center; align-items: center;
+    margin-bottom: 8px;
 }
-.opponent-pile-slot .slot-label { font-size: 0.65em; color: rgba(255,255,255,0.4); }
-
-/* --- 2. 主要游戏内容区 --- */
-#main-game-content-wrapper {
-    flex-grow: 1; /* 占据主要空间 */
-    display: grid; /* 使用 Grid 布局来实现复杂的定位 */
-    grid-template-columns: 1fr auto 1fr; /* 左边空白 | 中间内容 | 右边牌型分析 */
-    grid-template-rows: auto 1fr auto;    /* 上方尾墩 | 中央手牌 | 下方头中墩 */
-    grid-template-areas:
-        ".    center-hand back-pile"
-        "lower-piles center-hand arranged-analysis" /* 让手牌区跨越多行，或调整 */
-        "lower-piles .         .";
-    align-items: center; /* 整体垂直居中 */
-    justify-items: center; /* 整体水平居中 */
-    gap: 10px;
-    padding: 10px 0;
-    position: relative; /* 用于绝对定位一些元素如果Grid不够灵活 */
-    /* border: 1px solid red; */ /* 调试用 */
-}
-
-/* 2a. 尾墩摆牌区 (右上) */
+/* 尾墩本身的样式 */
 #back-hand-pile {
-    grid-area: back-pile;
-    /* 或者使用绝对定位：
-    position: absolute;
-    top: 0; right: 15%; // 估算位置
-    */
+    /* width: 200px; */ /* 宽度可以根据内容或固定值调整，如果只有一个墩 */
+    /* height: 65px; */
 }
 
-/* 2b. 中央玩家手牌显示区 */
+
+/* --- 3. 中央玩家手牌显示区 (橙色标注 - 占满横幅) --- */
 #player-hand-cards-center-display {
-    grid-area: center-hand;
-    min-height: 100px; max-height: 120px;
-    padding: 10px;
-    background-color: rgba(80, 40, 20, 0.5); /* 暗棕红色背景 */
-    border-radius: 8px;
-    overflow-x: auto; overflow-y: hidden;
-    width: 100%; /* 占据分配的grid单元格宽度 */
-    max-width: 700px; /* 限制最大宽度 */
-    display: flex; justify-content: center; align-items: center; gap: 5px;
-    /* border: 1px solid blue; */ /* 调试 */
+    width: 100%; /* 占满父容器宽度 */
+    min-height: 90px; /* 手牌区高度 */
+    padding: 8px;
+    background-color: rgba(200, 100, 0, 0.3); /* 橙色区域示意 */
+    border-radius: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin-bottom: 8px; /* 与下方区域的间距 */
 }
-#player-hand-cards-center-display .card {
-    position: relative; transform: none !important;
-}
-
-/* 2c. 玩家的头墩和中墩摆牌区 (左下和中下) */
-#player-lower-piles-area {
-    grid-area: lower-piles;
-    display: flex;
-    flex-direction: column; /* 头墩在上，中墩在下 */
-    align-items: flex-start; /* 左对齐（相对于其grid单元格） */
-    gap: 8px;
-    /* border: 1px solid green; */ /* 调试 */
-    justify-self: start; /* 尝试将其推到左边 */
-    align-self: end; /* 尝试将其推到底部 */
-}
-#front-hand-pile { /* 头墩 */
-    /* 定位在 player-lower-piles-area 内部 */
-}
-#middle-hand-pile { /* 中墩 */
-    /* 定位在 player-lower-piles-area 内部 */
-    /* margin-left: 50px; */ /* 简单偏移使其在中墩下方，或者调整Grid更精确 */
-}
+#player-hand-cards-center-display .card { /* 卡牌样式保持 */ }
 
 
-/* 玩家自己的牌墩通用样式 */
-.hand-pile-dropzone.player-self-pile {
+/* --- 4. 玩家的头墩、中墩摆牌区 与 牌型分析区 --- */
+#player-front-middle-piles-and-analysis-zone {
+    display: flex; /* 横向排列 头中墩组合 和 分析区 */
+    justify-content: center; /* 整体居中 */
+    align-items: flex-start;
+    gap: 15px;
+    padding: 8px 0;
+    width: 100%; /* 确保占满可用宽度 */
+    /* flex-grow: 1; */ /* 可以让它占据一些剩余空间 */
+}
+/* 包裹头墩和中墩的容器 */
+#front-middle-piles-combined {
+    /* .piles-row class 已应用 (flex, justify-center, gap) */
+    /* 这个容器将根据其内容（两个墩）自动调整宽度 */
+    /* background-color: rgba(0, 100, 0, 0.2); */ /* 绿色区域示意 */
+    flex-grow: 1; /* 让它尝试占据更多可用空间，以便分析区靠右 */
+    justify-content: flex-start; /* 让头墩和中墩从左开始排列 */
+    padding-left: 20%; /* 估算一个左边距，使其看起来更居中 */
+}
+/* 头墩和中墩本身的样式 */
+#front-hand-pile {
+    background-color: rgba(0, 100, 0, 0.3); /* 绿色示意 */
+}
+#middle-hand-pile {
+    background-color: rgba(10, 10, 10, 0.3); /* 黑色示意 */
+}
+.hand-pile-dropzone.player-self-pile { /* 通用玩家墩样式 */
     width: 90px; height: 65px;
-    background-color: rgba(0,0,0,0.3);
-    border: 2px dashed rgba(180, 220, 180, 0.5); /* 虚线颜色更柔和 */
+    /* ... 其他样式如 border, padding, label, wrapper 与之前类似 ... */
+    border: 2px dashed rgba(200, 255, 200, 0.5);
     padding: 4px; border-radius: 5px;
     display: flex; flex-direction: column; align-items: center;
     transition: background-color 0.2s, border-color 0.2s;
 }
-.player-self-pile .pile-label { font-size: 0.6em; color: #c0e0c0; margin-bottom: 2px;}
-.player-self-pile .cards-wrapper { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; width: 100%; height: 100%; }
-.player-self-pile.drag-over { background-color: rgba(100, 180, 100, 0.3); border-color: #c0ffc0; border-style: solid; }
 
 
-/* 2d. 截图右下角的小墩位概览 + 牌型分析区 */
-#arranged-piles-and-analysis-group {
-    grid-area: arranged-analysis;
-    display: flex;
-    flex-direction: column; /* 墩概览和分析上下排列 */
-    align-items: flex-start; /* 左对齐 */
-    gap: 5px;
-    padding: 5px;
-    background-color: rgba(0,0,0,0.1);
-    border-radius: 4px;
-    justify-self: end; /* 尝试推到右边 */
-    align-self: end;   /* 尝试推到底部 */
-    /* border: 1px solid purple; */ /* 调试 */
+#hand-analysis-display { /* 牌型分析区 */
+    width: 150px; /* 固定宽度 */
+    /* ... 其他样式与之前类似 ... */
+    align-self: center;
 }
-.mini-pile-display {
-    font-size: 0.6em;
-    color: #aaccaa;
-    padding: 2px 4px;
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 3px;
-    min-width: 60px; /* 给个最小宽度 */
-    text-align: left;
-}
-#hand-analysis-display {
-    width: 100%; /* 占据父容器的宽度 */
-    padding: 5px 0 0 0; /* 调整内边距 */
-    background-color: transparent; /* 背景由父容器提供 */
-    border: none;
-    font-size: 0.6em;
-    color: #b0c0b0;
-}
-#hand-analysis-display h4 { font-size: 1em; color: #d0e0d0; margin:0 0 3px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1px;}
-#hand-analysis-display p { margin-bottom: 2px; line-height: 1.1; }
 
 
 /* --- 卡牌通用样式 --- */
-/* ... (大部分卡牌样式、墩内卡牌样式与上一轮类似，可微调尺寸) ... */
-.card { width: 45px; height: 63px; /* 手牌区卡牌尺寸减小 */ }
-.card .rank { font-size: 1.1em; }
-.card .suit { font-size: 0.9em; }
-.cards-wrapper .card { width: 35px; height: 49px; /* 墩内卡牌更小 */ }
-.cards-wrapper .card .rank { font-size: 0.8em; }
-.cards-wrapper .card .suit { font-size: 0.65em; }
-.card.hearts, .card.diamonds { color: #D32F2F; }
-.card.spades, .card.clubs { color: #212121; }
+/* ... (大部分卡牌样式、墩内卡牌样式与上一轮类似) ... */
+.card { width: 48px; height: 68px; } /* 手牌区卡牌尺寸微调 */
+.cards-wrapper .card { width: 36px; height: 50px; } /* 墩内卡牌 */
 
 
-/* --- 3. 底部控制面板 --- */
-#controls-panel {
-    height: 45px; /* 控制面板高度减小 */
-    /* ... (其他样式与上一轮类似) ... */
-    margin-top: auto; /* 固定在底部 */
-}
-/* ... (玩家信息、按钮组、按钮样式、消息、模态框样式与上一轮类似，可微调尺寸和颜色) ... */
-.player-info { font-size: 0.7em;}
-.game-btn { padding: 4px 8px; font-size: 0.65em; border-radius: 10px;}
-#game-message-popup { bottom: 50px; font-size: 0.8em; }
+/* --- 5. 底部控制面板 --- */
+#controls-panel { /* ... (样式与之前类似) ... */ margin-top: auto; /* 推到底部 */ }
+/* ... (玩家信息、按钮组、按钮样式、消息、模态框样式与之前类似) ... */
