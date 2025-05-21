@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 十三水游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>十三水游戏 (简化版)</h1>
+
+        <div class="player-area">
+            <h2>我的手牌</h2>
+            <div id="my-cards" class="cards-container">
+                <!-- 卡牌将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="deal-button">发牌</button>
+            <button id="submit-button" style="display:none;">提交牌型 (功能待实现)</button>
+        </div>
+
+        <div class="info-area">
+            <h2>游戏信息</h2>
+            <p id="game-message">点击“发牌”开始游戏。</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
