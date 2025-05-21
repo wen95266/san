@@ -3,45 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>十三水 - 动态尾墩布局</title>
+    <title>十三水 - 经典桌面最终版</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-table">
-        <!-- 1. 对手信息区 (顶部三个小框) -->
-        <div id="opponent-info-area" class="top-info-row">
-            <div class="opponent-info-slot">对手头</div>
-            <div class="opponent-info-slot">对手中</div>
-            <div class="opponent-info-slot">对手尾</div>
+        <!-- 1. 对手牌墩区域 (顶部) -->
+        <div id="opponent-piles-display-area" class="piles-row">
+            <div class="opponent-pile-slot"><div class="slot-label">对手头</div></div>
+            <div class="opponent-pile-slot"><div class="slot-label">对手中</div></div>
+            <div class="opponent-pile-slot"><div class="slot-label">对手尾</div></div>
         </div>
 
-        <!-- 2. 头墩摆牌区 (蓝色标注) -->
-        <div id="player-front-pile-zone" class="pile-zone full-width-zone droptarget-pile" data-pile-name="front" data-max-cards="3">
-            <div class="zone-label">头墩 (0/3)</div>
-            <div class="cards-wrapper">
-                <!-- 拖拽到此处的头墩牌 -->
+        <!-- 2. 中央玩家手牌显示区 -->
+        <div id="player-hand-cards-center-display" class="cards-container">
+            <!-- 13张手牌将显示在这里 -->
+            <div class="zone-label hand-zone-label">手牌 / 尾墩 (0张)</div> <!-- 添加标签 -->
+        </div>
+
+        <!-- 3. 玩家摆牌区 与 牌型分析区 -->
+        <div id="player-arrangement-and-analysis-zone">
+            <div id="my-player-piles" class="piles-row">
+                <div class="hand-pile-dropzone player-self-pile droptarget-pile" id="front-hand-pile" data-pile-name="front" data-max-cards="3">
+                    <div class="zone-label pile-label">头墩 (0/3)</div>
+                    <div class="cards-wrapper"></div>
+                </div>
+                <div class="hand-pile-dropzone player-self-pile droptarget-pile" id="middle-hand-pile" data-pile-name="middle" data-max-cards="5">
+                    <div class="zone-label pile-label">中墩 (0/5)</div>
+                    <div class="cards-wrapper"></div>
+                </div>
+                <div class="hand-pile-dropzone player-self-pile droptarget-pile" id="back-hand-pile" data-pile-name="back" data-max-cards="5">
+                    <div class="zone-label pile-label">尾墩 (0/5)</div>
+                    <div class="cards-wrapper"></div>
+                </div>
+            </div>
+            <div id="hand-analysis-display">
+                <!-- 牌型分析将显示在这里 -->
             </div>
         </div>
 
-        <!-- 3. 中墩摆牌区 (黄色标注) -->
-        <div id="player-middle-pile-zone" class="pile-zone full-width-zone droptarget-pile" data-pile-name="middle" data-max-cards="5">
-            <div class="zone-label">中墩 (0/5)</div>
-            <div class="cards-wrapper">
-                <!-- 拖拽到此处的中墩牌 -->
-            </div>
-        </div>
-
-        <!-- 4. 玩家手牌显示区 / 尾墩区 (红色标注) -->
-        <div id="player-hand-and-back-pile-zone" class="cards-container full-width-zone droptarget-hand" data-pile-name="back">
-            <!-- 初始13张手牌，或理牌后剩下的尾墩牌 -->
-            <!-- JS 会动态管理这里的牌 -->
-            <div class="zone-label hand-zone-label">手牌 / 尾墩 (13张)</div>
-        </div>
-
-        <!-- (牌型分析区 - 暂时移除，如果需要再添加) -->
-        <!-- <div id="hand-analysis-display"></div> -->
-
-        <!-- 5. 底部控制面板 (绿色圆圈示意按钮) -->
+        <!-- 4. 底部控制面板 -->
         <div id="controls-panel">
             <div class="player-info">
                 <span id="player-name-display">玩家ID</span>
