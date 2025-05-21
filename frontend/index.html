@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>十三水 - 最终指定V2</title>
+    <title>十三水 - 精确宽度布局</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,21 +15,22 @@
             <div class="opponent-pile-slot"><div class="slot-label">对手尾</div></div>
         </div>
 
-        <!-- 2. 主要游戏区域 -->
-        <div id="main-game-content-wrapper">
-            <!-- 2a. 玩家的尾墩摆牌区 (在中央手牌区的右上方) -->
+        <!-- 2. 玩家的尾墩摆牌区 (蓝色标注 - 占满横幅) -->
+        <div id="player-back-pile-zone" class="full-width-pile-zone">
             <div class="hand-pile-dropzone player-self-pile" id="back-hand-pile" data-pile-name="back" data-max-cards="5">
                 <div class="pile-label">尾墩 (0/5)</div>
                 <div class="cards-wrapper"></div>
             </div>
+        </div>
 
-            <!-- 2b. 中央玩家手牌显示区 (红线框/深色背景区域) -->
-            <div id="player-hand-cards-center-display" class="cards-container">
-                <!-- 13张手牌将显示在这里 -->
-            </div>
+        <!-- 3. 中央玩家手牌显示区 (橙色标注 - 占满横幅) -->
+        <div id="player-hand-cards-center-display" class="cards-container full-width-hand-display">
+            <!-- 13张手牌将显示在这里 -->
+        </div>
 
-            <!-- 2c. 玩家的头墩和中墩摆牌区 (在中央手牌区的左下方和正下方) -->
-            <div id="player-lower-piles-area">
+        <!-- 4. 玩家的头墩、中墩摆牌区 与 牌型分析区 -->
+        <div id="player-front-middle-piles-and-analysis-zone">
+            <div id="front-middle-piles-combined" class="piles-row"> <!-- 头墩和中墩并排 -->
                 <div class="hand-pile-dropzone player-self-pile" id="front-hand-pile" data-pile-name="front" data-max-cards="3">
                     <div class="pile-label">头墩 (0/3)</div>
                     <div class="cards-wrapper"></div>
@@ -39,19 +40,12 @@
                     <div class="cards-wrapper"></div>
                 </div>
             </div>
-            
-            <!-- 2d. 牌型分析区 (截图中小方块，位于头中尾墩右侧) -->
-            <div id="arranged-piles-and-analysis-group"> <!-- 新增包裹，用于排列三个小墩和分析区 -->
-                <div class="mini-pile-display" id="mini-front-display">头(0/3)</div>
-                <div class="mini-pile-display" id="mini-middle-display">中(0/5)</div>
-                <div class="mini-pile-display" id="mini-back-display">尾(0/5)</div>
-                <div id="hand-analysis-display">
-                    <!-- 牌型分析 -->
-                </div>
+            <div id="hand-analysis-display">
+                <!-- 牌型分析 -->
             </div>
         </div>
 
-        <!-- 3. 底部控制面板 -->
+        <!-- 5. 底部控制面板 -->
         <div id="controls-panel">
             <div class="player-info">
                 <span id="player-name-display">玩家ID</span>
