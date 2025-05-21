@@ -1,193 +1,240 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded and parsed");
+
     // DOM Elements
     const dealButton = document.getElementById('deal-button');
     const submitButton = document.getElementById('submit-button');
     const resetButton = document.getElementById('reset-button');
     const sortButton = document.getElementById('sort-button');
     const aiSuggestButton = document.getElementById('ai-suggest-button');
-    const roundResultButton = document.getElementById('round-result-button'); // 新按钮
+    const roundResultButton = document.getElementById('round-result-button');
 
-    const playerHandDisplayArc = document.getElementById('player-hand-display-arc'); // 新的手牌区
-    const frontHandPileWrapper = document.getElementById('front-hand-pile').querySelector('.cards-wrapper');
-    const middleHandPileWrapper = document.getElementById('middle-hand-pile').querySelector('.cards-wrapper');
-    const backHandPileWrapper = document.getElementById('back-hand-pile').querySelector('.cards-wrapper');
+    const playerHandDisplayArc = document.getElementById('player-hand-display-arc');
+    const frontHandPileWrapper = document.getElementById('front-hand-pile') ? document.getElementById('front-hand-pile').querySelector('.cards-wrapper') : null;
+    const middleHandPileWrapper = document.getElementById('middle-hand-pile') ? document.getElementById('middle-hand-pile').querySelector('.cards-wrapper') : null;
+    const backHandPileWrapper = document.getElementById('back-hand-pile') ? document.getElementById('back-hand-pile').querySelector('.cards-wrapper') : null;
     const pileDropzones = [
         document.getElementById('front-hand-pile'),
         document.getElementById('middle-hand-pile'),
         document.getElementById('back-hand-pile')
-    ];
+    ].filter(el => el != null); // Filter out nulls if any pile is missing
 
     const gameMessageTextElement = document.getElementById('game-message');
     const gameMessageOverlayElement = document.getElementById('game-message-overlay');
     const handAnalysisContainer = document.getElementById('hand-analysis-display-container');
 
-
     const myPlayerNameElement = document.getElementById('my-player-name');
     const myPlayerScoreElement = document.getElementById('my-player-score');
-    const myPlayerStatusElement = document.getElementById('my-player-status'); // 实际的状态文字已移除，用按钮代替
 
     // API URL
     const API_URL = 'https://9526.ip-ddns.com/thirteen_api/api.php';
-    console.log("Using API_URL:", API_URL);
+    console.log("SCRIPT: Using API_URL:", API_URL);
 
     // Card visuals & values
     const suits = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
-    const ranks = { /* ... as before ... */ };
-    const rankValues = { /* ... as before ... */ };
+    const ranks = { 'A': 'A', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', 'T': '10', 'J': 'J', 'Q': 'Q', 'K': 'K' };
+    const rankValues = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
 
     // Game State
     let originalHand = [];
-    let currentMyHandCards = []; // 存储对象 {value: "S A", element: HTMLDivElement, originalIndex: int }
-    let frontHandData = []; // {value, element}
-    let middleHandData = [];
-    let backHandData = [];
-    let draggedCardInfo = null; // {value, element, source: 'arc' | 'pile', pileNameIfFromPile: 'front'|'middle'|'back'}
+    let currentMyHandCards = [];
+    let frontHandData = [], middleHandData = [], backHandData = [];
+    let draggedCardInfo = null;
 
-    // Arc layout parameters (can be adjusted)
-    const ARC_RADIUS = 250; // px, distance from pivot point to card center (approx)
-    const ARC_ANGLE_SPREAD = 70; // degrees, total spread for 13 cards
-    const CARD_WIDTH_EFFECTIVE_FOR_ARC = 30; // px, effective width for spacing in arc
+    // Arc layout parameters
+    const ARC_RADIUS_CSS_OFFSET = 180;
+    const ARC_ANGLE_SPREAD = 65;
+    const CARD_WIDTH_EFFECTIVE_FOR_ARC = 28; // Adjusted for potentially smaller cards/tighter spread
 
 
     // --- Init ---
-    setupEventListeners();
-    resetGameUI();
-    showGameMessage('点击“新局”开始。');
-    myPlayerNameElement.textContent = "玩家_" + Math.random().toString(36).substring(2, 6);
-    // myPlayerStatusElement is removed/repurposed by roundResultButton
+    if (document.readyState === 'loading') {
+        console.error("SCRIPT: DOM not ready for init, this shouldn't happen with DOMContentLoaded");
+    } else {
+        console.log("SCRIPT: Initializing game...");
+        setupEventListeners();
+        resetGameUI();
+        showGameMessage('点击“新局”开始游戏。');
+        if(myPlayerNameElement) myPlayerNameElement.textContent = "玩家_" + Math.random().toString(36).substring(2, 6);
+        console.log("SCRIPT: Game initialized.");
+    }
+
 
     // --- Event Listeners Setup ---
     function setupEventListeners() {
-        if(dealButton) dealButton.addEventListener('click', handleDealNewHand);
-        // ... other button listeners ...
-        if(submitButton) submitButton.addEventListener('click', handleSubmitHand);
-        if(resetButton) resetButton.addEventListener('click', handleResetArrangement);
-        if(sortButton) sortButton.addEventListener('click', handleSortHand);
-        if(aiSuggestButton) aiSuggestButton.addEventListener('click', handleAiSuggest);
-        if(roundResultButton) roundResultButton.addEventListener('click', () => {
-            // Placeholder: show detailed round result modal or info
-            showGameMessage('本局详细结果功能待开发。', 'info');
-        });
+        console.log("SCRIPT: Setting up event listeners...");
+        if(dealButton) {
+            dealButton.addEventListener('click', handleDealNewHand);
+            console.log("SCRIPT: Deal button listener attached.");
+        } else console.error("SCRIPT ERROR: Deal button not found!");
 
+        if(submitButton) submitButton.addEventListener('click', handleSubmitHand); else console.error("SCRIPT ERROR: Submit button not found!");
+        if(resetButton) resetButton.addEventListener('click', handleResetArrangement); else console.error("SCRIPT ERROR: Reset button not found!");
+        if(sortButton) sortButton.addEventListener('click', handleSortHand); else console.error("SCRIPT ERROR: Sort button not found!");
+        if(aiSuggestButton) aiSuggestButton.addEventListener('click', handleAiSuggest); else console.error("SCRIPT ERROR: AI Suggest button not found!");
+        if(roundResultButton) roundResultButton.addEventListener('click', () => showGameMessage('本局详细结果功能待开发。', 'info'));
 
-        pileDropzones.forEach(zone => {
+        pileDropzones.forEach((zone, index) => {
             if(zone){
                 zone.addEventListener('dragover', handleDragOver);
                 zone.addEventListener('dragenter', handleDragEnter);
                 zone.addEventListener('dragleave', handleDragLeave);
-                zone.addEventListener('drop', handleDropOnPile); // Renamed
+                zone.addEventListener('drop', handleDropOnPile);
+            } else {
+                console.error(`SCRIPT ERROR: Pile dropzone ${index} is missing!`);
             }
         });
 
-        // Drop listener for playerHandDisplayArc (to return cards from piles to hand)
         if(playerHandDisplayArc) {
             playerHandDisplayArc.addEventListener('dragover', handleDragOver);
             playerHandDisplayArc.addEventListener('drop', handleDropOnArc);
+        } else {
+            console.error("SCRIPT ERROR: playerHandDisplayArc element not found!");
         }
+        console.log("SCRIPT: Event listeners setup complete.");
     }
 
     // --- UI Update Functions ---
-    function showGameMessage(message, type = 'info') { /* ... as before ... */ }
+    function showGameMessage(message, type = 'info') {
+        if (!gameMessageTextElement || !gameMessageOverlayElement) {
+            console.error("SCRIPT ERROR: Game message elements not found for message:", message);
+            return;
+        }
+        // ... (rest of showGameMessage as before)
+        gameMessageTextElement.textContent = message;
+        gameMessageOverlayElement.classList.remove('error', 'success', 'visible'); // Ensure visible is removed before re-adding
+        if (type === 'error') gameMessageOverlayElement.classList.add('error');
+        else if (type === 'success') gameMessageOverlayElement.classList.add('success');
+        gameMessageOverlayElement.classList.add('visible');
+        setTimeout(() => {
+            if(gameMessageOverlayElement) gameMessageOverlayElement.classList.remove('visible');
+        }, message.length > 40 ? 4500 : 3000);
+    }
 
     function resetGameUI() {
-        originalHand = [];
-        currentMyHandCards = [];
+        console.log("SCRIPT: Resetting game UI...");
+        originalHand = []; currentMyHandCards = [];
         frontHandData = []; middleHandData = []; backHandData = [];
 
         if(playerHandDisplayArc) playerHandDisplayArc.innerHTML = '';
         if(frontHandPileWrapper) frontHandPileWrapper.innerHTML = '';
-        // ... clear other pile wrappers ...
         if(middleHandPileWrapper) middleHandPileWrapper.innerHTML = '';
         if(backHandPileWrapper) backHandPileWrapper.innerHTML = '';
 
-
         if(dealButton) { dealButton.textContent = '新局'; dealButton.disabled = false; }
         if(submitButton) submitButton.style.display = 'none';
-        // ... hide other buttons ...
         if(resetButton) resetButton.style.display = 'none';
         if(sortButton) sortButton.style.display = 'none';
         if(aiSuggestButton) aiSuggestButton.style.display = 'none';
         if(roundResultButton) roundResultButton.style.display = 'none';
 
-
         updatePileCountsAndLabels();
-        if(handAnalysisContainer) handAnalysisContainer.innerHTML = ''; // Clear analysis
+        if(handAnalysisContainer) handAnalysisContainer.innerHTML = '';
         if(myPlayerScoreElement) myPlayerScoreElement.textContent = "本局得分: 0";
+        console.log("SCRIPT: Game UI reset complete.");
     }
 
-    function updatePileCountsAndLabels() { /* ... as before ... */ }
+    function updatePileCountsAndLabels() {
+        pileDropzones.forEach(zone => {
+            if (!zone) return;
+            const pileName = zone.dataset.pileName; // Use data-pile-name directly
+            let currentPileData;
+            let pileDisplayName = zone.querySelector('.pile-label') ? zone.querySelector('.pile-label').textContent.split(' ')[0] : pileName.charAt(0).toUpperCase() + pileName.slice(1);
+
+
+            if (pileName === 'front') currentPileData = frontHandData;
+            else if (pileName === 'middle') currentPileData = middleHandData;
+            else if (pileName === 'back') currentPileData = backHandData;
+            else return; // Should not happen
+
+            const maxCards = parseInt(zone.dataset.maxCards);
+            const labelElement = zone.querySelector('.pile-label');
+            if(labelElement) labelElement.textContent = `${pileDisplayName} (${currentPileData.length}/${maxCards})`;
+        });
+    }
 
     function displayHandAnalysis(analysis) {
-        if (!handAnalysisContainer || !analysis) return;
+        // ... (as before, targeting handAnalysisContainer)
+        if (!handAnalysisContainer || !analysis) {
+            if(handAnalysisContainer) handAnalysisContainer.innerHTML = '';
+            return;
+        }
         let analysisHTML = `<h4>牌型分析:</h4>`;
-        // ... (rest of the display logic from previous version, ensure it targets handAnalysisContainer)
         const pilesOrder = ['front', 'middle', 'back'];
         const pilesDisplayNames = {'front': '头墩', 'middle': '中墩', 'back': '尾墩'};
         pilesOrder.forEach(pileKey => {
             if (analysis[pileKey]) {
-                analysisHTML += `<p><strong>${pilesDisplayNames[pileKey]}:</strong> ${analysis[pileKey].name || '未知'} 
-                                 <em>(${analysis[pileKey].cards.join(', ')})</em></p>`;
+                analysisHTML += `<p><strong>${pilesDisplayNames[pileKey]}:</strong> ${analysis[pileKey].name || '-'} 
+                                 <em>(${analysis[pileKey].cards.join(' ')})</em></p>`;
+            } else {
+                 analysisHTML += `<p><strong>${pilesDisplayNames[pileKey]}:</strong> -</p>`;
             }
         });
         handAnalysisContainer.innerHTML = analysisHTML;
     }
 
-
     // --- Card Creation and ARC Rendering ---
-    function createCardElement(cardStr, indexInHand) { // Pass index for arc positioning
-        const cardDiv = createBasicCardElement(cardStr); // Use a helper for common parts
-        cardDiv.dataset.originalIndex = indexInHand; // Store original index for stable sort/ID
-        // Drag events for cards
-        cardDiv.addEventListener('dragstart', (e) => handleDragStart(e, cardDiv, 'arc')); // Pass source
-        cardDiv.addEventListener('dragend', handleDragEnd);
-        // Click to select for drag (alternative to direct drag on complex layouts)
-        // cardDiv.addEventListener('click', () => selectCardForDrag(cardDiv));
-        return cardDiv;
-    }
-
-    function createBasicCardElement(cardStr) { // Helper for card DOM structure
+    function createBasicCardElement(cardStr) {
+        // ... (as before)
         const [suitKeyFull, rankKey] = cardStr.split(' ');
         const suitKey = suitKeyFull.charAt(0).toUpperCase();
 
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         cardDiv.classList.add(getSuitClass(suitKey));
+        // Normalize card value stored in dataset for consistency, e.g., "S A" not "Spade A"
         cardDiv.dataset.value = `${suitKey} ${rankKey}`;
         cardDiv.draggable = true;
 
         const rankSpan = document.createElement('span'); rankSpan.classList.add('rank');
         rankSpan.textContent = ranks[rankKey] || rankKey;
         const suitSpan = document.createElement('span'); suitSpan.classList.add('suit');
-        suitSpan.textContent = suits[suitKey] || suitKey;
+        suitSpan.textContent = suits[suitKey] || suitKey; // Use mapped suit char for display
         cardDiv.appendChild(rankSpan); cardDiv.appendChild(suitSpan);
         return cardDiv;
     }
 
+    function createCardElementForArc(cardStr, indexInHand) {
+        const cardDiv = createBasicCardElement(cardStr);
+        cardDiv.dataset.originalIndex = indexInHand;
+        cardDiv.addEventListener('dragstart', (e) => handleDragStart(e, cardDiv, 'arc'));
+        cardDiv.addEventListener('dragend', handleDragEnd);
+        return cardDiv;
+    }
 
     function renderPlayerHandArc() {
-        if (!playerHandDisplayArc) return;
-        playerHandDisplayArc.innerHTML = ''; // Clear existing cards
+        if (!playerHandDisplayArc) { console.error("SCRIPT ERROR: playerHandDisplayArc not found for rendering"); return; }
+        playerHandDisplayArc.innerHTML = '';
 
         const numCards = currentMyHandCards.length;
         if (numCards === 0) return;
 
-        const angleStep = ARC_ANGLE_SPREAD / (numCards > 1 ? numCards -1 : 1);
-        const startAngle = -ARC_ANGLE_SPREAD / 2;
+        let angleStep;
+        if (numCards > 1) {
+            angleStep = Math.min(9, Math.max(4.5, ARC_ANGLE_SPREAD / (numCards - 1))); // Adjusted step
+        } else {
+            angleStep = 0;
+        }
+        const startAngle = numCards > 1 ? -((numCards - 1) * angleStep) / 2 : 0;
 
         currentMyHandCards.forEach((cardObj, i) => {
-            const angle = numCards === 1 ? 0 : startAngle + i * angleStep;
+            const angle = startAngle + i * angleStep;
             cardObj.element.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-            // Overlap cards slightly视觉上更好看，通过调整z-index
             cardObj.element.style.zIndex = i;
             playerHandDisplayArc.appendChild(cardObj.element);
         });
+        console.log(`SCRIPT: Rendered ${numCards} cards in arc.`);
     }
 
     function addCardToPlayerHandArc(cardValue, originalIndex) {
-        const cardElement = createCardElement(cardValue, originalIndex);
+        // Check if card already in hand (by value, assuming unique cards in original deal)
+        if (currentMyHandCards.some(c => c.value === cardValue)) {
+            console.warn(`SCRIPT: Card ${cardValue} already in hand arc. Skipping add.`);
+            return;
+        }
+        const cardElement = createCardElementForArc(cardValue, originalIndex);
         currentMyHandCards.push({ value: cardValue, element: cardElement, originalIndex: originalIndex });
-        // Sort here if you want hand to always be sorted, or rely on sort button
-        currentMyHandCards.sort((a,b) => a.originalIndex - b.originalIndex); // Keep original deal order initially
+        currentMyHandCards.sort((a,b) => a.originalIndex - b.originalIndex);
         renderPlayerHandArc();
     }
 
@@ -195,56 +242,73 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardIndex = currentMyHandCards.findIndex(c => c.value === cardValue);
         if (cardIndex > -1) {
             currentMyHandCards.splice(cardIndex, 1);
+            // Element is removed from DOM by appending it elsewhere or by renderPlayerHandArc clearing
         }
-        renderPlayerHandArc(); // Re-render to adjust arc
+        renderPlayerHandArc();
     }
 
 
     // --- Game Action Handlers ---
     async function handleDealNewHand() {
-        console.log("handleDealNewHand called");
+        console.log("SCRIPT: handleDealNewHand called");
         showGameMessage('正在发牌...', 'info');
         resetGameUI();
-        // ... (disable buttons, set status) ...
         if(dealButton) dealButton.disabled = true;
 
         try {
+            console.log("SCRIPT: Attempting to fetch from API:", API_URL + "?action=deal");
             const response = await fetch(`${API_URL}?action=deal`);
-            if (!response.ok) throw new Error(`发牌服务请求失败: ${response.status}`);
+            console.log("SCRIPT: Deal fetch response status:", response.status);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("SCRIPT: Deal API error response text:", errorText);
+                throw new Error(`发牌API请求失败: ${response.status} ${response.statusText}`);
+            }
             const data = await response.json();
+            console.log("SCRIPT: Deal data received:", data);
 
-            if (data.success && data.hand) {
+            if (data.success && data.hand && Array.isArray(data.hand)) {
                 originalHand = [...data.hand];
+                currentMyHandCards = []; // Clear before adding new cards
                 originalHand.forEach((cardStr, index) => addCardToPlayerHandArc(cardStr, index));
-                // renderPlayerHandArc(); // addCardToPlayerHandArc now calls render
+                // renderPlayerHandArc(); // addCardToPlayerHandArc calls it
 
                 showGameMessage('请拖拽手牌理牌。', 'info');
-                // ... (enable relevant buttons) ...
                 if(dealButton) dealButton.textContent = '新局';
                 if(resetButton) resetButton.style.display = 'inline-block';
                 if(sortButton) sortButton.style.display = 'inline-block';
                 if(aiSuggestButton) aiSuggestButton.style.display = 'inline-block';
-
-            } else { throw new Error(data.message || '后端发牌逻辑错误'); }
-        } catch (error) { /* ... error handling ... */ }
-        finally { if(dealButton) dealButton.disabled = false; }
+            } else {
+                console.error("SCRIPT: Deal API success false or hand missing/invalid:", data);
+                throw new Error(data.message || '后端发牌数据格式错误');
+            }
+        } catch (error) {
+            console.error('SCRIPT ERROR: 发牌操作失败:', error);
+            showGameMessage(`发牌失败: ${error.message}`, 'error');
+        } finally {
+            if(dealButton) dealButton.disabled = false;
+        }
     }
 
     function handleSortHand() {
+        // ... (as before)
         currentMyHandCards.sort((a, b) => {
             const valA = rankValues[a.value.split(' ')[1]];
             const valB = rankValues[b.value.split(' ')[1]];
             if (valA !== valB) return valB - valA; // Desc by rank
-            return suits[a.value.split(' ')[0]].localeCompare(suits[b.value.split(' ')[0]]); // Asc by suit
+            // Ensure suits object is used for sorting by suit char
+            const suitCharA = a.value.split(' ')[0];
+            const suitCharB = b.value.split(' ')[0];
+            return (suits[suitCharA] || suitCharA).localeCompare(suits[suitCharB] || suitCharB);
         });
-        // Update originalIndex after sort if you want the visual order to reflect sort for subsequent renders
-        currentMyHandCards.forEach((cardObj, index) => cardObj.originalIndex = index);
+        currentMyHandCards.forEach((cardObj, index) => cardObj.originalIndex = index); // Update originalIndex after sort
         renderPlayerHandArc();
         showGameMessage('手牌已整理。', 'info');
     }
 
     function handleResetArrangement() {
-        // Move all cards from piles back to hand arc
+        // ... (as before, ensure addCardToPlayerHandArc is used)
+        console.log("SCRIPT: Resetting arrangement");
         const cardsToReturnToHand = [];
         [frontHandData, middleHandData, backHandData].forEach(pileData => {
             pileData.forEach(cardObj => cardsToReturnToHand.push(cardObj));
@@ -255,12 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(middleHandPileWrapper) middleHandPileWrapper.innerHTML = '';
         if(backHandPileWrapper) backHandPileWrapper.innerHTML = '';
 
-
+        currentMyHandCards = []; // Clear hand before re-adding
         cardsToReturnToHand.forEach(cardObj => {
-            // Find if this card was originally in hand to restore its originalIndex for sorting
-            const originalCard = originalHand.find(origCardStr => origCardStr === cardObj.value);
-            const originalIdx = originalHand.indexOf(originalCard);
-            addCardToPlayerHandArc(cardObj.value, originalIdx !== -1 ? originalIdx : currentMyHandCards.length);
+            // Use the originalIndex stored on the card object if available
+            addCardToPlayerHandArc(cardObj.value, cardObj.originalIndex !== undefined ? cardObj.originalIndex : currentMyHandCards.length);
         });
         // addCardToPlayerHandArc calls renderPlayerHandArc
 
@@ -271,112 +333,184 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleAiSuggest() {
-        // ... (logic to get 13 cards for suggestion, similar to previous version)
-        let handToSuggest = originalHand.length === 13 ? [...originalHand] : [];
-        if (handToSuggest.length !== 13) { /* error message */ return; }
+        // ... (as before, ensure placeSuggestedCards is robust)
+        let handToSuggest = [];
+        // Collect all current cards regardless of location
+        const allCurrentCardsOnBoard = new Set();
+        currentMyHandCards.forEach(c => allCurrentCardsOnBoard.add(c.value));
+        [frontHandData, middleHandData, backHandData].forEach(pile => pile.forEach(c => allCurrentCardsOnBoard.add(c.value)));
+
+        if (allCurrentCardsOnBoard.size === 13) {
+            handToSuggest = Array.from(allCurrentCardsOnBoard);
+        } else if (originalHand.length === 13) {
+            console.warn("AI Suggest: Not all 13 cards accounted for on board, using original hand for suggestion.");
+            handToSuggest = [...originalHand];
+        } else {
+            showGameMessage('AI建议需要13张完整手牌。', 'error');
+            return;
+        }
+
 
         showGameMessage('AI建议生成中...', 'info');
         if(aiSuggestButton) aiSuggestButton.disabled = true;
         try {
-            const response = await fetch(`${API_URL}?action=aiSuggest`, { /* ... */ });
+            const response = await fetch(`${API_URL}?action=aiSuggest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hand: handToSuggest }),
+            });
             const result = await response.json();
             if (result.success && result.suggestion) {
-                handleResetArrangement(); // Clear board, put all cards in hand arc
-                setTimeout(() => { // Allow reset to render
+                showGameMessage('AI建议已生成 (仅供参考)。', 'info');
+                handleResetArrangement(); // Clears piles, moves all cards to hand arc
+                // A small delay might be needed for DOM to update from reset before placing
+                setTimeout(() => {
                     placeSuggestedCards(result.suggestion.front, frontHandPileWrapper, frontHandData);
                     placeSuggestedCards(result.suggestion.middle, middleHandPileWrapper, middleHandData);
                     placeSuggestedCards(result.suggestion.back, backHandPileWrapper, backHandData);
                     updatePileCountsAndLabels();
                     checkIfReadyToSubmit();
-                    showGameMessage('AI建议已应用 (仅供参考)。', 'success');
-                }, 100); // Small delay for visual update
-            } else { /* error message */ }
-        } catch (error) { /* error message */ }
-        finally { if(aiSuggestButton) aiSuggestButton.disabled = false; }
+                }, 50); // 50ms delay
+            } else {
+                showGameMessage(`AI建议失败：${result.message || '未知错误'}`, 'error');
+            }
+        } catch (error) {
+            console.error('AI建议请求失败:', error);
+            showGameMessage(`AI建议请求异常：${error.message}`, 'error');
+        } finally {
+            if(aiSuggestButton) aiSuggestButton.disabled = false;
+        }
     }
 
     function placeSuggestedCards(suggestedCardsArray, targetPileWrapper, targetPileDataArray) {
+        if (!targetPileWrapper) { console.error("SCRIPT ERROR: Target pile wrapper not found for placing cards"); return; }
+        console.log("SCRIPT: Placing suggested cards for pile:", targetPileWrapper.parentElement.id, suggestedCardsArray);
+
         suggestedCardsArray.forEach(cardValueToPlace => {
             const cardIndexInHand = currentMyHandCards.findIndex(cardObj => cardObj.value === cardValueToPlace);
             if (cardIndexInHand > -1) {
-                const cardObj = currentMyHandCards[cardIndexInHand]; // Get ref
-                // Remove from hand arc data and DOM
-                removeCardFromPlayerHandArc(cardObj.value); // This will re-render arc
+                const cardObj = currentMyHandCards[cardIndexInHand];
+                removeCardFromPlayerHandArc(cardObj.value); // This removes from data and re-renders arc
 
-                // Add to pile data and DOM
-                targetPileDataArray.push(cardObj); // Add the same object {value, element, originalIndex}
-                targetPileWrapper.appendChild(cardObj.element); // Move the DOM element
-                // Reset transform from arc layout for pile display
-                cardObj.element.style.transform = 'none';
+                targetPileDataArray.push(cardObj); // Add card object to pile data
+                targetPileWrapper.appendChild(cardObj.element); // Move DOM element
+
+                cardObj.element.style.transform = 'none'; // Reset arc transform
                 cardObj.element.style.zIndex = 'auto';
-                // Add event listener for dragging from pile
-                cardObj.element.removeEventListener('dragstart', handleDragStart); // Remove old arc listener
-                cardObj.element.addEventListener('dragstart', (e) => handleDragStart(e, cardObj.element, 'pile', targetPileWrapper.parentElement.dataset.pileName));
+                cardObj.element.classList.remove('selected-for-drag');
+
+                // Update drag listener for the card, now it's in a pile
+                cardObj.element.removeEventListener('dragstart', handleDragStart); // Remove previous one
+                cardObj.element.addEventListener('dragstart', (ev) => handleDragStart(ev, cardObj.element, 'pile', targetPileWrapper.parentElement.dataset.pileName));
+            } else {
+                console.warn(`SCRIPT: AI Suggest - Card ${cardValueToPlace} not found in current hand arc.`);
             }
         });
-        // renderPlayerHandArc(); // Called by removeCardFromPlayerHandArc
+        // renderPlayerHandArc(); // removeCardFromPlayerHandArc already calls this
     }
 
-
     async function handleSubmitHand() {
-        // ... (validation and payload creation as before) ...
-        const payload = { /* ... */ };
+        // ... (as before, with robust error display and UI updates)
+        const frontValues = frontHandData.map(c => c.value);
+        const middleValues = middleHandData.map(c => c.value);
+        const backValues = backHandData.map(c => c.value);
+
+        if (frontValues.length !== 3 || middleValues.length !== 5 || backValues.length !== 5) {
+            showGameMessage('牌墩张数不正确！头3中5尾5。', 'error');
+            return;
+        }
+        const payload = { front: frontValues, middle: middleValues, back: backValues };
         showGameMessage('正在提交比牌...', 'info');
-        // ... (disable buttons) ...
-        if(handAnalysisContainer) handAnalysisContainer.innerHTML = ''; // Clear old analysis
+        // ... disable buttons ...
+        if(submitButton) submitButton.disabled = true;
+        if(resetButton) resetButton.disabled = true;
+        if(sortButton) sortButton.disabled = true;
+        if(aiSuggestButton) aiSuggestButton.disabled = true;
+
+        if(handAnalysisContainer) handAnalysisContainer.innerHTML = '';
 
         try {
-            const response = await fetch(`${API_URL}?action=submitHand`, { /* ... */ });
+            const response = await fetch(`${API_URL}?action=submitHand`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
             const result = await response.json();
-            if (!response.ok) throw new Error(/* ... */);
+            if (!response.ok) throw new Error(result.message || `提交失败: HTTP ${response.status}`);
 
             if (result.success) {
-                showGameMessage(`比牌完成！得分: ${result.score || 0}.`, 'success');
+                showGameMessage(`比牌完成！得分: ${result.score !== undefined ? result.score : '-'}. ${result.message || ''}`, 'success');
                 if (result.analysis) displayHandAnalysis(result.analysis);
-                // ... (update score, set status, show round result button) ...
                 if(roundResultButton) roundResultButton.style.display = 'inline-block';
                 if(submitButton) submitButton.style.display = 'none';
                 if(myPlayerScoreElement && result.score !== undefined) {
                      myPlayerScoreElement.textContent = `本局得分: ${result.score}`;
                 }
-
-            } else { /* handle backend rejection (e.g.,倒水) */ }
-        } catch (error) { /* handle fetch error */ }
-        finally { /* re-enable buttons if not end of round */ }
+            } else {
+                showGameMessage(`提交被拒：${result.message}`, 'error');
+                if (result.analysis) displayHandAnalysis(result.analysis);
+                // Re-enable buttons for correction
+                if(submitButton) submitButton.disabled = false;
+                if(resetButton) resetButton.disabled = false;
+                if(sortButton) sortButton.disabled = false;
+                if(aiSuggestButton) aiSuggestButton.disabled = false;
+            }
+        } catch (error) {
+            console.error('SCRIPT ERROR: 提交牌型操作失败:', error);
+            showGameMessage(`提交出错：${error.message}`, 'error');
+            if(submitButton) submitButton.disabled = false;
+            if(resetButton) resetButton.disabled = false;
+            if(sortButton) sortButton.disabled = false;
+            if(aiSuggestButton) aiSuggestButton.disabled = false;
+        }
     }
 
-    function checkIfReadyToSubmit() { /* ... as before ... */ }
-
+    function checkIfReadyToSubmit() {
+        // ... (as before)
+        const totalArranged = frontHandData.length + middleHandData.length + backHandData.length;
+        if (totalArranged === 13 && currentMyHandCards.length === 0) {
+            if(submitButton) {
+                submitButton.style.display = 'inline-block';
+                submitButton.disabled = false;
+            }
+        } else {
+            if(submitButton) submitButton.style.display = 'none';
+        }
+    }
 
     // --- Drag and Drop Handlers ---
     function handleDragStart(e, cardElement, source, pileName = null) {
-        cardElement.classList.add('selected-for-drag'); // Special style for arc card being dragged
+        // ... (as before)
+        if (source === 'arc') {
+            cardElement.classList.add('selected-for-drag');
+        }
         draggedCardInfo = {
             value: cardElement.dataset.value,
             element: cardElement,
-            source: source, // 'arc' or 'pile'
-            pileNameIfFromPile: pileName
+            source: source,
+            pileNameIfFromPile: pileName,
+            originalIndex: cardElement.dataset.originalIndex // Persist originalIndex
         };
         e.dataTransfer.setData('text/plain', draggedCardInfo.value);
         e.dataTransfer.effectAllowed = 'move';
-        // .dragging class will be added by a general dragstart if needed,
-        // or rely on .selected-for-drag for arc
         setTimeout(() => { if(cardElement) cardElement.classList.add('dragging');}, 0);
     }
 
     function handleDragEnd(e) {
+        // ... (as before)
         if(draggedCardInfo && draggedCardInfo.element) {
             draggedCardInfo.element.classList.remove('selected-for-drag', 'dragging');
         }
         draggedCardInfo = null;
         pileDropzones.forEach(zone => { if(zone) zone.classList.remove('drag-over'); });
     }
+    function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+    function handleDragEnter(e) { e.preventDefault(); const dz = e.target.closest('.hand-pile-dropzone'); if(dz) dz.classList.add('drag-over'); }
+    function handleDragLeave(e) { const dz = e.target.closest('.hand-pile-dropzone'); if(dz && !dz.contains(e.relatedTarget)) dz.classList.remove('drag-over');}
 
-    function handleDragOver(e) { /* ... as before ... */ }
-    function handleDragEnter(e) { /* ... as before ... */ }
-    function handleDragLeave(e) { /* ... as before ... */ }
 
-    function handleDropOnPile(e) { // Dropping onto a pile (front, middle, back)
+    function handleDropOnPile(e) {
+        // ... (as before, ensure originalIndex is preserved in cardObj when adding to pileData)
         e.preventDefault();
         const dropzoneElement = e.target.closest('.hand-pile-dropzone');
         if (!dropzoneElement || !draggedCardInfo) return;
@@ -384,82 +518,78 @@ document.addEventListener('DOMContentLoaded', () => {
         dropzoneElement.classList.remove('drag-over');
         const targetPileName = dropzoneElement.dataset.pileName;
         const targetPileWrapper = dropzoneElement.querySelector('.cards-wrapper');
+        if (!targetPileWrapper) { console.error("Target pile wrapper not found in dropzone:", dropzoneElement); return; }
         const maxCards = parseInt(dropzoneElement.dataset.maxCards);
 
         let targetPileData;
         if (targetPileName === 'front') targetPileData = frontHandData;
-        // ... (get targetPileData for middle and back) ...
         else if (targetPileName === 'middle') targetPileData = middleHandData;
-        else targetPileData = backHandData;
-
+        else if (targetPileName === 'back') targetPileData = backHandData;
+        else return;
 
         if (targetPileData.length < maxCards) {
-            // Remove from source
             if (draggedCardInfo.source === 'arc') {
                 removeCardFromPlayerHandArc(draggedCardInfo.value);
             } else if (draggedCardInfo.source === 'pile' && draggedCardInfo.pileNameIfFromPile) {
                 removeCardDataFromSpecificPile(draggedCardInfo.value, draggedCardInfo.pileNameIfFromPile);
-                // The element is already out of its original pile wrapper due to drag
             }
 
-            // Add to target pile
-            targetPileData.push({ value: draggedCardInfo.value, element: draggedCardInfo.element, originalIndex: draggedCardInfo.element.dataset.originalIndex });
+            // Preserve originalIndex when moving to pile
+            targetPileData.push({ value: draggedCardInfo.value, element: draggedCardInfo.element, originalIndex: draggedCardInfo.originalIndex });
             targetPileWrapper.appendChild(draggedCardInfo.element);
-            // Reset transform and z-index from arc layout
             draggedCardInfo.element.style.transform = 'none';
             draggedCardInfo.element.style.zIndex = 'auto';
-            draggedCardInfo.element.classList.remove('selected-for-drag'); // ensure this is off
+            draggedCardInfo.element.classList.remove('selected-for-drag');
 
-            // Update drag listener for the card, now it's in a pile
-            draggedCardInfo.element.removeEventListener('dragstart', handleDragStart); // Might be an old one
+            draggedCardInfo.element.removeEventListener('dragstart', handleDragStart);
             draggedCardInfo.element.addEventListener('dragstart', (ev) => handleDragStart(ev, draggedCardInfo.element, 'pile', targetPileName));
-
 
             updatePileCountsAndLabels();
             checkIfReadyToSubmit();
         } else {
-            showGameMessage(`${targetPileName.toUpperCase()}墩已满!`, 'error');
-            // If full, and card was from arc, it should snap back.
-            // This needs more advanced drag revert logic or just re-add to arc if not placed.
-            // For now, dragend will remove .dragging, it might just visually pop back.
+            showGameMessage(`${targetPileName.charAt(0).toUpperCase() + targetPileName.slice(1)}墩已满!`, 'error');
+             // Simple revert: if card was from arc, re-add it. If from pile, it just visually snaps back (no data change).
+            if (draggedCardInfo.source === 'arc') {
+                addCardToPlayerHandArc(draggedCardInfo.value, draggedCardInfo.originalIndex);
+            }
         }
-        // draggedCardInfo = null; // Cleared in dragend
+        // draggedCardInfo cleared in dragend
     }
 
-    function handleDropOnArc(e) { // Dropping back onto the hand arc area
+    function handleDropOnArc(e) {
+        // ... (as before, ensure originalIndex from dataset is used when re-adding to arc)
         e.preventDefault();
         if (!draggedCardInfo || draggedCardInfo.source === 'arc') {
-            // If dragged from arc to arc (reordering) or no valid drag, do nothing or handle reorder
-            if(draggedCardInfo && draggedCardInfo.source === 'arc') { // re-ordering attempt
-                // Simple re-append to force re-calc in renderPlayerHandArc, or implement specific reorder logic
-                playerHandDisplayArc.appendChild(draggedCardInfo.element);
-                renderPlayerHandArc();
+            if(draggedCardInfo && draggedCardInfo.source === 'arc' && playerHandDisplayArc) {
+                playerHandDisplayArc.appendChild(draggedCardInfo.element); // Re-append for potential re-order visual
+                renderPlayerHandArc(); // Re-calculate arc positions
             }
             return;
         }
-
-        // Card is from a pile, return it to hand arc
         if (draggedCardInfo.source === 'pile' && draggedCardInfo.pileNameIfFromPile) {
             removeCardDataFromSpecificPile(draggedCardInfo.value, draggedCardInfo.pileNameIfFromPile);
-            // The element is already out of its pile wrapper due to drag start
-
-            // Add back to hand arc (JS data and DOM)
-            addCardToPlayerHandArc(draggedCardInfo.value, parseInt(draggedCardInfo.element.dataset.originalIndex));
-            // addCardToPlayerHandArc handles adding to currentMyHandCards and rendering arc
-
+            const originalIdx = parseInt(draggedCardInfo.element.dataset.originalIndex); // Get originalIndex
+            addCardToPlayerHandArc(draggedCardInfo.value, isNaN(originalIdx) ? currentMyHandCards.length : originalIdx);
             updatePileCountsAndLabels();
             checkIfReadyToSubmit();
         }
-        // draggedCardInfo = null; // Cleared in dragend
+        // draggedCardInfo cleared in dragend
     }
 
     function removeCardDataFromSpecificPile(cardValue, pileName) {
+        // ... (as before)
         if (pileName === 'front') frontHandData = frontHandData.filter(c => c.value !== cardValue);
         else if (pileName === 'middle') middleHandData = middleHandData.filter(c => c.value !== cardValue);
         else if (pileName === 'back') backHandData = backHandData.filter(c => c.value !== cardValue);
     }
 
-
     // --- Utility ---
-    function getSuitClass(suitKey) { /* ... as before ... */ }
+    function getSuitClass(suitKey) {
+        const suitLower = suitKey.charAt(0).toLowerCase();
+        if (suitLower === 'h') return 'hearts';
+        if (suitLower === 'd') return 'diamonds';
+        if (suitLower === 's') return 'spades';
+        if (suitLower === 'c') return 'clubs';
+        return '';
+    }
 });
