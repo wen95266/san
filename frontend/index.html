@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML5 十三水 Pro - 精确布局</title>
+    <title>HTML5 十三水 Pro - 直线手牌</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,36 +17,36 @@
             <div class="opponent-pile-slot"><div class="pile-placeholder">对手2尾</div></div>
         </div>
 
-        <!-- 中心区域: 包含扇形手牌 -->
-        <div id="center-hand-area">
-            <div id="player-hand-display-arc">
-                <!-- 卡牌动态添加 -->
+        <!-- 玩家摆牌区 和 牌型分析区 -->
+        <div id="player-zone-main"> <!-- 新增一个包裹层 -->
+            <div id="player-arrangement-and-analysis">
+                <div id="my-arrangement-piles" class="piles-row"> <!-- 确保是横向排列三个墩 -->
+                    <div class="hand-pile-dropzone my-pile" id="front-hand-pile" data-max-cards="3" data-pile-name="front">
+                        <div class="pile-label">头墩 (0/3)</div>
+                        <div class="cards-wrapper"></div>
+                    </div>
+                    <div class="hand-pile-dropzone my-pile" id="middle-hand-pile" data-max-cards="5" data-pile-name="middle">
+                        <div class="pile-label">中墩 (0/5)</div>
+                        <div class="cards-wrapper"></div>
+                    </div>
+                    <div class="hand-pile-dropzone my-pile" id="back-hand-pile" data-max-cards="5" data-pile-name="back">
+                        <div class="pile-label">尾墩 (0/5)</div>
+                        <div class="cards-wrapper"></div>
+                    </div>
+                </div>
+                <div id="hand-analysis-display-container">
+                    <!-- JS填充牌型分析 -->
+                </div>
             </div>
         </div>
 
-        <!-- 玩家摆牌区 和 牌型分析区 (紧密结合) -->
-        <div id="player-zone">
-            <div id="my-arrangement-piles" class="piles-row">
-                <div class="hand-pile-dropzone my-pile" id="front-hand-pile" data-max-cards="3" data-pile-name="front">
-                    <div class="pile-label">头墩 (0/3)</div>
-                    <div class="cards-wrapper"></div>
-                </div>
-                <div class="hand-pile-dropzone my-pile" id="middle-hand-pile" data-max-cards="5" data-pile-name="middle">
-                    <div class="pile-label">中墩 (0/5)</div>
-                    <div class="cards-wrapper"></div>
-                </div>
-                <div class="hand-pile-dropzone my-pile" id="back-hand-pile" data-max-cards="5" data-pile-name="back">
-                    <div class="pile-label">尾墩 (0/5)</div>
-                    <div class="cards-wrapper"></div>
-                </div>
-            </div>
-            <div id="hand-analysis-display-container">
-                <!-- JS填充牌型分析 -->
-            </div>
+        <!-- 玩家手牌区 (横向直线排列) -->
+        <div id="player-hand-area-straight" class="cards-container">
+            <!-- 卡牌动态添加 -->
         </div>
 
 
-        <!-- 底部控制面板 -->
+        <!-- 底部控制面板 (保持不变) -->
         <div id="bottom-controls-panel">
             <div class="player-info-main">
                 <span class="player-name" id="my-player-name">玩家ID</span>
@@ -58,6 +58,7 @@
                 <button id="sort-button" class="game-button" style="display:none;">整理</button>
                 <button id="reset-button" class="game-button" style="display:none;">重摆</button>
                 <button id="ai-suggest-button" class="game-button" style="display:none;" title="功能开发中">AI建议</button>
+                <button id="ai-托管-button" class="game-button ai-托管-style" style="display:none;">AI托管</button>
                 <button id="submit-button" class="game-button submit-style" style="display:none;">开始比牌</button>
             </div>
         </div>
@@ -65,8 +66,11 @@
         <div id="game-message-overlay">
             <p id="game-message">点击“新局”开始游戏。</p>
         </div>
-    </div>
 
+        <div id="ai-托管-modal" class="modal" style="display:none;">
+            <!-- ... (模态框内容与上一版相同) ... -->
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
