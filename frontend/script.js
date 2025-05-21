@@ -1,224 +1,269 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM fully loaded and parsed - Straight Hand Layout");
+    console.log("十三水游戏脚本初始化...");
 
     // DOM Elements
-    // ... (dealButton, submitButton, etc. as before)
-    const playerHandArea = document.getElementById('player-hand-area-straight'); // 改用新的手牌区ID
-    // ... (pileWrappers, pileDropzones, messageElements, etc. as before)
+    const dealBtn = document.getElementById('deal-btn');
+    const sortBtn = document.getElementById('sort-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const aiSuggestBtn = document.getElementById('ai-suggest-btn');
+    const ai托管Btn = document.getElementById('ai-托管-btn');
+    const submitBtn = document.getElementById('submit-btn');
 
-    // API URL, Card visuals & values, Game State (draggedCardInfo 的 source 不再有 'arc')
-    // ... (大部分保持不变) ...
-    // let draggedCardInfo = null; // {value, element, source: 'hand' | 'pile', pileNameIfFromPile: 'front'|'middle'|'back'}
+    const playerHandArea = document.getElementById('player-hand-cards-area');
+    const pileDropzones = {
+        front: document.getElementById('front-hand-pile'),
+        middle: document.getElementById('middle-hand-pile'),
+        back: document.getElementById('back-hand-pile')
+    };
+    const pileWrappers = {
+        front: pileDropzones.front?.querySelector('.cards-wrapper'),
+        middle: pileDropzones.middle?.querySelector('.cards-wrapper'),
+        back: pileDropzones.back?.querySelector('.cards-wrapper')
+    };
+    const handAnalysisDisplay = document.getElementById('hand-analysis-display');
 
+    const playerNameDisplay = document.getElementById('player-name-display');
+    const playerScoreDisplay = document.getElementById('player-score-display');
+    const ai托管Info = document.getElementById('ai-托管-info');
 
-    // --- Init ---
-    // ... (调用 setupEventListeners, resetGameUI, showGameMessage) ...
+    const gameMessagePopup = document.getElementById('game-message-popup');
+    const ai托管OptionsModal = document.getElementById('ai-托管-options-modal');
 
+    // API URL
+    const API_URL = 'https://9526.ip-ddns.com/thirteen_api/api.php';
+    console.log("API URL:", API_URL);
 
-    // --- Event Listeners Setup ---
+    // Card Definitions
+    const SUITS_DISPLAY = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
+    const RANKS_DISPLAY = { 'A': 'A', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', 'T': '10', 'J': 'J', 'Q': 'Q', 'K': 'K' };
+    const RANK_VALUES_SORT = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
+
+    // Game State
+    let currentHandCards = []; // { value: "S A", element: DOMElement } in player's hand area
+    let arrangedPilesData = { front: [], middle: [], back: [] }; // { value: "S A", element: DOMElement }
+    let originalDealtHand = []; // Store initially dealt 13 cards (strings "S A")
+    let draggedCardInfo = null; // { value, element, sourceArea: 'hand' | 'pile', sourcePileName: 'front'|'middle'|'back' }
+
+    let isAi托管Active = false;
+    let ai托管RoundsTotal = 0;
+    let ai托管RoundsLeft = 0;
+    const AI_OPERATION_DELAY = 1200; // ms for AI "thinking"
+    const AI_NEXT_ROUND_DELAY = 2500; // ms between AI托管 rounds
+
+    // --- Initialization ---
+    function initGame() {
+        setupEventListeners();
+        resetGameUI();
+        if(playerNameDisplay) playerNameDisplay.textContent = "玩家_" + Math.random().toString(36).substring(2, 6);
+        showGameMessage("点击“新局”开始游戏");
+    }
+
+    // --- Event Listeners ---
     function setupEventListeners() {
-        // ... (按钮事件监听器不变) ...
+        dealBtn?.addEventListener('click', () => handleDealNewHand());
+        sortBtn?.addEventListener('click', handleSortHand);
+        resetBtn?.addEventListener('click', handleResetArrangement);
+        aiSuggestBtn?.addEventListener('click', () => handleAiSuggest());
+        ai托管Btn?.addEventListener('click', toggleAi托管Modal);
+        submitBtn?.addEventListener('click', () => handleSubmitHand());
 
-        pileDropzones.forEach(zone => { /* ... (不变) ... */ });
+        Object.values(pileDropzones).forEach(zone => {
+            if (!zone) return;
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleDropOnPile);
+        });
 
-        if(playerHandArea) { // 改用 playerHandArea
-            playerHandArea.addEventListener('dragover', handleDragOver);
-            playerHandArea.addEventListener('drop', handleDropOnHandArea); // 新的drop处理器
-        } else {
-            console.error("SCRIPT ERROR: playerHandArea element not found!");
-        }
-        // ...
+        playerHandArea?.addEventListener('dragover', handleDragOver);
+        playerHandArea?.addEventListener('drop', handleDropOnHandArea);
+
+        ai托管OptionsModal?.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const rounds = parseInt(e.target.dataset.rounds);
+                selectAi托管Rounds(rounds);
+            });
+        });
     }
 
     // --- UI Update Functions ---
-    // ... (showGameMessage, resetGameUI, updatePileCountsAndLabels, displayHandAnalysis 不变或微调DOM目标) ...
-    function resetGameUI() {
-        // ...
-        if(playerHandArea) playerHandArea.innerHTML = ''; // 清空新的手牌区
-        // ...
+    function showGameMessage(message, type = 'info', duration = 3000) {
+        if (!gameMessagePopup || !gameMessagePopup.firstChild) return;
+        const p = gameMessagePopup.firstChild;
+        p.textContent = message;
+        gameMessagePopup.className = ''; // Reset classes
+        if (type === 'error') gameMessagePopup.classList.add('error');
+        else if (type === 'success') gameMessagePopup.classList.add('success');
+        
+        gameMessagePopup.style.display = 'block';
+        gameMessagePopup.classList.add('visible');
+        setTimeout(() => {
+            gameMessagePopup.classList.remove('visible');
+            // Keep display:none after transition if you have CSS transition for opacity
+            // setTimeout(() => { gameMessagePopup.style.display = 'none'; }, 300); // Match CSS transition
+        }, duration);
     }
 
+    function resetGameUI(isNewRound = true) {
+        currentHandCards = [];
+        arrangedPilesData = { front: [], middle: [], back: [] };
+        if(isNewRound) originalDealtHand = [];
 
-    // --- Card Creation and STRAIGHT Hand Rendering ---
-    function createBasicCardElement(cardStr) { /* ... (不变) ... */ }
+        playerHandArea.innerHTML = '';
+        Object.values(pileWrappers).forEach(pw => { if(pw) pw.innerHTML = ''; });
+        if(handAnalysisDisplay) handAnalysisDisplay.innerHTML = '';
 
-    function createCardElementForHand(cardStr) { // 用于手牌区的卡牌
-        const cardDiv = createBasicCardElement(cardStr);
-        // Drag events for cards from hand
-        cardDiv.addEventListener('dragstart', (e) => handleDragStart(e, cardDiv, 'hand')); // source is 'hand'
-        cardDiv.addEventListener('dragend', handleDragEnd);
-        // Optional: click to select visual, if direct drag is hard
-        cardDiv.addEventListener('click', () => {
-            // Toggle a 'selected-for-drag' class, then drag must start from this selected card
-            const currentlySelected = playerHandArea.querySelector('.card.selected-for-drag');
-            if(currentlySelected && currentlySelected !== cardDiv) {
-                currentlySelected.classList.remove('selected-for-drag');
+        updatePileLabels();
+        toggleActionButtons(false); // Hide all action buttons except 'New Game'
+        if(dealBtn && !isAi托管Active) dealBtn.disabled = false;
+        if(playerScoreDisplay && isNewRound) playerScoreDisplay.textContent = "本局得分: 0";
+        if(ai托管Info) ai托管Info.style.display = 'none';
+    }
+
+    function updatePileLabels() {
+        for (const pileName in pileDropzones) {
+            const zone = pileDropzones[pileName];
+            const label = zone?.querySelector('.pile-label');
+            if (label) {
+                const max = zone.dataset.maxCards;
+                label.textContent = `${label.textContent.split(' ')[0]} (${arrangedPilesData[pileName].length}/${max})`;
             }
-            cardDiv.classList.toggle('selected-for-drag');
-        });
-        return cardDiv;
-    }
-
-    function renderPlayerHandStraight() { // 渲染直线手牌
-        if (!playerHandArea) { console.error("SCRIPT ERROR: playerHandArea not found for rendering"); return; }
-        playerHandArea.innerHTML = ''; // Clear existing cards
-
-        currentMyHandCards.forEach((cardObj) => { // currentMyHandCards现在只存手牌区的牌
-            playerHandArea.appendChild(cardObj.element);
-        });
-        console.log(`SCRIPT: Rendered ${currentMyHandCards.length} cards in straight hand area.`);
-    }
-
-    function addCardToPlayerHand(cardValue) { // 添加到直线手牌区
-        // Check if card already in hand (by value)
-        if (currentMyHandCards.some(c => c.value === cardValue)) {
-            console.warn(`SCRIPT: Card ${cardValue} already in hand. Skipping add.`);
-            return;
         }
-        const cardElement = createCardElementForHand(cardValue);
-        currentMyHandCards.push({ value: cardValue, element: cardElement });
-        // Sort here if you want hand to always be sorted after adding, or rely on sort button
-        // currentMyHandCards.sort(...);
-        renderPlayerHandStraight();
     }
 
-    function removeCardFromPlayerHand(cardValue) { // 从直线手牌区移除
-        const cardIndex = currentMyHandCards.findIndex(c => c.value === cardValue);
-        if (cardIndex > -1) {
-            currentMyHandCards.splice(cardIndex, 1);
+    function toggleActionButtons(showGameInProgressButtons) {
+        if(sortBtn) sortBtn.style.display = showGameInProgressButtons ? 'inline-block' : 'none';
+        if(resetBtn) resetBtn.style.display = showGameInProgressButtons ? 'inline-block' : 'none';
+        if(aiSuggestBtn) aiSuggestBtn.style.display = showGameInProgressButtons ? 'inline-block' : 'none';
+        if(ai托管Btn) ai托管Btn.style.display = showGameInProgressButtons ? 'inline-block' : 'none';
+        if(submitBtn) submitBtn.style.display = 'none'; // Submit shown only when ready
+    }
+    
+    function displayAnalysis(analysisData) {
+        if(!handAnalysisDisplay) return;
+        let html = '<h4>牌型分析:</h4>';
+        for(const pile of ['front', 'middle', 'back']) {
+            const pileName = pile === 'front' ? '头墩' : (pile === 'middle' ? '中墩' : '尾墩');
+            html += `<p><strong>${pileName}:</strong> 
+                     ${analysisData[pile]?.name || '-'} 
+                     <em>(${analysisData[pile]?.cards?.join(' ') || ''})</em></p>`;
         }
-        // No re-render needed here if element is moved by drag-drop,
-        // but if called programmatically, then renderPlayerHandStraight() might be needed.
+        handAnalysisDisplay.innerHTML = html;
+    }
+
+    // --- Card Element Creation & Rendering ---
+    function createCardDOMElement(cardValue) {
+        const [suitChar, rankChar] = cardValue.split(' ');
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.classList.add(getSuitClass(suitChar));
+        el.dataset.value = cardValue;
+        el.draggable = true;
+        el.innerHTML = `<span class="rank">${RANKS_DISPLAY[rankChar] || rankChar}</span>
+                        <span class="suit">${SUITS_DISPLAY[suitChar] || suitChar}</span>`;
+        el.addEventListener('dragstart', (e) => handleDragStart(e, el));
+        el.addEventListener('dragend', handleDragEnd);
+        return el;
+    }
+
+    function renderPlayerHand() {
+        if(!playerHandArea) return;
+        playerHandArea.innerHTML = '';
+        currentHandCards.forEach(cardObj => playerHandArea.appendChild(cardObj.element));
+    }
+
+    function addCardToHandData(cardValue) {
+        const element = createCardDOMElement(cardValue);
+        currentHandCards.push({ value: cardValue, element });
+    }
+    
+    function removeCardFromHandData(cardValue) {
+        currentHandCards = currentHandCards.filter(c => c.value !== cardValue);
+    }
+
+    function addCardToPileData(cardValue, pileName, cardElement) {
+        arrangedPilesData[pileName].push({ value: cardValue, element: cardElement });
+    }
+
+    function removeCardFromPileData(cardValue, pileName) {
+        arrangedPilesData[pileName] = arrangedPilesData[pileName].filter(c => c.value !== cardValue);
     }
 
 
-    // --- Game Action Handlers ---
-    async function handleDealNewHand(isCalledByAi = false) {
-        // ... (重置UI,禁用按钮等) ...
+    // --- Game Logic Handlers ---
+    async function handleDealNewHand(isAiCall = false) {
+        console.log("Attempting to deal new hand. AI Call:", isAiCall);
+        if (!isAiCall) stopAi托管(); // User action cancels AI托管
+        resetGameUI(true); // Full reset for new round
+        if(dealBtn) dealBtn.disabled = true;
+        showGameMessage("正在发牌...", "info", 1500);
+
         try {
             const response = await fetch(`${API_URL}?action=deal`);
-            // ... (处理响应) ...
-            if (data.success && data.hand && Array.isArray(data.hand)) {
-                originalHand = [...data.hand];
-                currentMyHandCards = []; // 清空当前手牌数据
-                originalHand.forEach((cardStr) => addCardToPlayerHand(cardStr)); // 添加到直线手牌区
-                // renderPlayerHandStraight(); // addCardToPlayerHand calls it
+            if (!response.ok) throw new Error(`API发牌失败: ${response.status}`);
+            const data = await response.json();
+            if (!data.success || !data.hand) throw new Error(data.message || "后端发牌数据错误");
 
-                // ... (显示提示，启用按钮等) ...
-                if (isAi托管Active && ai托管RoundsLeft > 0) {
-                    setTimeout(ai托管ProcessCurrentHand, AI_THINKING_DELAY);
-                }
-            } // ...
-        } // ...
+            originalDealtHand = [...data.hand];
+            originalDealtHand.forEach(cv => addCardToHandData(cv));
+            renderPlayerHand();
+            toggleActionButtons(true);
+            if(dealBtn && !isAiCall) dealBtn.disabled = false; // Re-enable if user dealt
+
+            if (isAi托管Active && ai托管RoundsLeft > 0) {
+                showGameMessage(`AI托管: 第 ${ai托管RoundsTotal - ai托管RoundsLeft + 1} 局理牌中...`, "info");
+                setTimeout(ai托管ProcessRound, AI_OPERATION_DELAY);
+            }
+
+        } catch (err) {
+            console.error("发牌错误:", err);
+            showGameMessage(err.message, "error");
+            if(dealBtn) dealBtn.disabled = false;
+        }
     }
 
     function handleSortHand() {
-        currentMyHandCards.sort((a, b) => { /* ... (排序逻辑不变) ... */ });
-        renderPlayerHandStraight(); // 重新渲染排序后的直线手牌
-        showGameMessage('手牌已整理。', 'info');
+        currentHandCards.sort((a, b) => {
+            const valA = RANK_VALUES_SORT[a.value.split(' ')[1]];
+            const valB = RANK_VALUES_SORT[b.value.split(' ')[1]];
+            if (valA !== valB) return valB - valA; // Rank descending
+            return a.value.split(' ')[0].localeCompare(b.value.split(' ')[0]); // Suit ascending
+        });
+        renderPlayerHand();
+        showGameMessage("手牌已整理", "info", 1500);
     }
 
     function handleResetArrangement() {
-        // ... (将墩内牌移回手牌区的逻辑) ...
-        cardsToReturnToHand.forEach(cardObj => {
-            addCardToPlayerHand(cardObj.value); // 添加回直线手牌区
-        });
-        // renderPlayerHandStraight(); // addCardToPlayerHand calls it
-        // ... (清空墩，更新标签等) ...
+        if(handAnalysisDisplay) handAnalysisDisplay.innerHTML = '';
+        // Move all cards from piles back to hand
+        for (const pileName in arrangedPilesData) {
+            arrangedPilesData[pileName].forEach(cardObj => addCardToHandData(cardObj.value));
+            arrangedPilesData[pileName] = []; // Clear pile data
+            if(pileWrappers[pileName]) pileWrappers[pileName].innerHTML = ''; // Clear pile DOM
+        }
+        renderPlayerHand();
+        updatePileLabels();
+        if(submitBtn) submitBtn.style.display = 'none';
+        showGameMessage("牌墩已清空，请重新理牌", "info");
     }
 
-    async function handleAiSuggest(isCalledByAi托管 = false) {
-        // ... (获取手牌逻辑不变) ...
+    async function handleAiSuggest(isAi托管Call = false) {
+        let current13Cards = originalDealtHand; // Default to original if no cards on board
+        if (currentHandCards.length + arrangedPilesData.front.length + arrangedPilesData.middle.length + arrangedPilesData.back.length === 13){
+            current13Cards = currentHandCards.map(c=>c.value)
+                .concat(arrangedPilesData.front.map(c=>c.value))
+                .concat(arrangedPilesData.middle.map(c=>c.value))
+                .concat(arrangedPilesData.back.map(c=>c.value));
+        } else if (originalDealtHand.length !== 13) {
+             showGameMessage("请先发牌后再使用AI建议", "error"); return Promise.reject("No cards");
+        }
+
+        if(!isAi托管Call) showGameMessage("AI建议生成中...", "info", 2000);
+        if(aiSuggestBtn && !isAi托管Call) aiSuggestBtn.disabled = true;
+
         try {
-            // ... (fetch AI Suggest) ...
-            if (result.success && result.suggestion) {
-                // ...
-                handleResetArrangement(); // 清空墩，牌回到手牌区
-                await new Promise(resolve => setTimeout(resolve, 50));
-                placeSuggestedCards(result.suggestion.front, frontHandPileWrapper, frontHandData);
-                // ... (为中墩和尾墩调用 placeSuggestedCards) ...
-                updatePileCountsAndLabels();
-                checkIfReadyToSubmit();
-                // ...
-            } // ...
-        } // ...
-    }
-
-    function placeSuggestedCards(suggestedCardsArray, targetPileWrapper, targetPileDataArray) {
-        // ...
-        suggestedCardsArray.forEach(cardValueToPlace => {
-            const cardIndexInHand = currentMyHandCards.findIndex(cardObj => cardObj.value === cardValueToPlace);
-            if (cardIndexInHand > -1) {
-                const cardObj = currentMyHandCards[cardIndexInHand];
-                removeCardFromPlayerHand(cardObj.value); // 从手牌数据移除
-
-                targetPileDataArray.push(cardObj);
-                targetPileWrapper.appendChild(cardObj.element);
-                cardObj.element.classList.remove('selected-for-drag'); // 移除手牌区的选中样式
-
-                // 更新拖拽监听器，源变为 'pile'
-                cardObj.element.removeEventListener('dragstart', handleDragStart);
-                cardObj.element.addEventListener('dragstart', (ev) => handleDragStart(ev, cardObj.element, 'pile', targetPileWrapper.parentElement.dataset.pileName));
-            } // ...
-        });
-        renderPlayerHandStraight(); // 更新手牌区显示 (移除已摆放的牌)
-    }
-
-    // handleSubmitHand 逻辑基本不变
-
-    // --- Drag and Drop Handlers ---
-    function handleDragStart(e, cardElement, source, pileName = null) {
-        cardElement.classList.remove('selected-for-drag'); // 清除点击选中（如果有）
-        draggedCardInfo = {
-            value: cardElement.dataset.value,
-            element: cardElement,
-            source: source, // 'hand' or 'pile'
-            pileNameIfFromPile: pileName
-        };
-        // ... (setData, effectAllowed, add 'dragging' class) ...
-    }
-    // handleDragEnd, handleDragOver, handleDragEnter, handleDragLeave 不变
-
-    function handleDropOnPile(e) {
-        // ...
-        if (targetPileData.length < maxCards) {
-            if (draggedCardInfo.source === 'hand') {
-                removeCardFromPlayerHand(draggedCardInfo.value); // 从手牌数据移除
-            } else if (draggedCardInfo.source === 'pile' && draggedCardInfo.pileNameIfFromPile) {
-                removeCardDataFromSpecificPile(draggedCardInfo.value, draggedCardInfo.pileNameIfFromPile);
-            }
-            // ... (添加到目标墩数据和DOM，更新监听器) ...
-            targetPileWrapper.appendChild(draggedCardInfo.element); // 移动DOM元素
-            draggedCardInfo.element.removeEventListener('dragstart', handleDragStart); // 清除旧的
-            draggedCardInfo.element.addEventListener('dragstart', (ev) => handleDragStart(ev, draggedCardInfo.element, 'pile', targetPileName));
-
-        } // ...
-        renderPlayerHandStraight(); // 更新手牌区，以防万一有牌被错误移除但未正确放回
-    }
-
-    function handleDropOnHandArea(e) { // 牌从墩拖拽回手牌区
-        e.preventDefault();
-        if (!draggedCardInfo || draggedCardInfo.source === 'hand') {
-            // 如果是从手牌区拖到手牌区（可能是为了重新排序，如果支持的话）
-            if(draggedCardInfo && draggedCardInfo.source === 'hand' && playerHandArea) {
-                 playerHandArea.appendChild(draggedCardInfo.element); // 简单地追加
-                 // 可能需要重新排序 currentMyHandCards 数组并重新渲染以反映顺序
-            }
-            return;
-        }
-        if (draggedCardInfo.source === 'pile' && draggedCardInfo.pileNameIfFromPile) {
-            removeCardDataFromSpecificPile(draggedCardInfo.value, draggedCardInfo.pileNameIfFromPile);
-            addCardToPlayerHand(draggedCardInfo.value); // 添加回手牌区数据并渲染
-            // addCardToPlayerHand 内部会创建新的 element 并绑定 'hand' source 的 dragstart
-
-            updatePileCountsAndLabels();
-            checkIfReadyToSubmit();
-        }
-    }
-    // removeCardDataFromSpecificPile, getSuitClass 不变
-
-    // AI托管相关函数 (handleAi托管ButtonClick, handleAi托管Selection, startAi托管, stopAi托管, ai托管ProcessCurrentHand)
-    // 需要确保它们在调用 handleDealNewHand, handleAiSuggest, handleSubmitHand 时传递正确的 isCalledByAi 参数
-    // 并且在 resetGameUI 和其他UI更新中考虑到托管状态。
-
-});
+            const response = await fetch(`${API_URL}?action=aiSuggest`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ hand: current13Cards })
+            });
+            if (!response.ok
