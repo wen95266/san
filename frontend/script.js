@@ -1,463 +1,227 @@
+// ... (大部分 script.js 代码与上一版类似，我们只关注新增和修改的部分) ...
+
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements (基本不变，但消息处理会变)
-    const dealButton = document.getElementById('deal-button');
-    const submitButton = document.getElementById('submit-button');
-    const resetButton = document.getElementById('reset-button');
-    const sortButton = document.getElementById('sort-button');
+    // ... (DOM Elements, API_URL, Card visuals & values, Game State as before) ...
+    const aiSuggestButton = document.getElementById('ai-suggest-button');
+    // const ai托管Button = document.getElementById('ai-托管-button'); // 托管功能复杂，暂不实现
 
-    const myHandArea = document.getElementById('my-hand-area');
-    const frontHandPileWrapper = document.getElementById('front-hand-pile').querySelector('.cards-wrapper');
-    const middleHandPileWrapper = document.getElementById('middle-hand-pile').querySelector('.cards-wrapper');
-    const backHandPileWrapper = document.getElementById('back-hand-pile').querySelector('.cards-wrapper');
-    const pileDropzones = [
-        document.getElementById('front-hand-pile'),
-        document.getElementById('middle-hand-pile'),
-        document.getElementById('back-hand-pile')
-    ];
-
-    const gameMessageTextElement = document.getElementById('game-message'); // 这是浮层内的p元素
-    const gameMessageOverlayElement = document.getElementById('game-message-overlay'); // 这是整个浮层
-
-    const myPlayerNameElement = document.getElementById('my-player-name');
-    const myPlayerScoreElement = document.getElementById('my-player-score');
-    const myPlayerStatusElement = document.getElementById('my-player-status');
-
-    // API URL
-    const API_URL = 'https://9526.ip-ddns.com/thirteen_api/api.php'; // ！！！请替换
-
-    // Card visuals & values (不变)
-    const suits = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
-    const ranks = { 'A': 'A', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', 'T': '10', 'J': 'J', 'Q': 'Q', 'K': 'K' };
-    const rankValues = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
-
-    // Game State (不变)
-    let originalHand = [];
-    let currentMyHandCards = [];
-    let frontHandData = [];
-    let middleHandData = [];
-    let backHandData = [];
-    let draggedCard = null;
-
-    // --- Init ---
-    setupEventListeners();
-    resetGameUI(); // Call this to set initial pile labels correctly
-    showGameMessage('点击“发牌/新局”开始。');
-    myPlayerNameElement.textContent = "玩家_" + Math.random().toString(36).substring(2, 6);
-    myPlayerStatusElement.textContent = "准备中";
-    myPlayerStatusElement.className = 'player-status waiting'; // 使用class控制颜色
-
-
-    // --- Event Listeners Setup (不变，除了确保获取正确的wrapper) ---
+    // --- Event Listeners Setup ---
     function setupEventListeners() {
+        // ... (deal, submit, reset, sort buttons as before) ...
         dealButton.addEventListener('click', handleDealNewHand);
         submitButton.addEventListener('click', handleSubmitHand);
         resetButton.addEventListener('click', handleResetArrangement);
         sortButton.addEventListener('click', handleSortHand);
+        aiSuggestButton.addEventListener('click', handleAiSuggest); // 新增
 
-        pileDropzones.forEach(zone => {
-            zone.addEventListener('dragover', handleDragOver);
-            zone.addEventListener('dragenter', handleDragEnter);
-            zone.addEventListener('dragleave', handleDragLeave);
-            zone.addEventListener('drop', handleDrop);
-        });
-
-        myHandArea.addEventListener('dragover', handleDragOver);
-        myHandArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            if (draggedCard && draggedCard.sourcePile !== 'myHandArea') {
-                removeCardFromPile(draggedCard.value, draggedCard.sourcePile);
-                addCardToMyHand(draggedCard.value, true);
-                draggedCard = null;
-                updatePileCountsAndLabels(); // 更新标签
-                checkIfReadyToSubmit();
-            } else if (draggedCard) {
-                myHandArea.appendChild(draggedCard.element);
-                draggedCard = null;
-            }
-        });
+        // ... (Drag and Drop listeners as before) ...
     }
 
     // --- UI Update Functions ---
-    function showGameMessage(message, type = 'info') { // type can be 'info', 'success', 'error'
-        gameMessageTextElement.textContent = message;
-        gameMessageOverlayElement.classList.remove('error', 'success'); // Remove old type classes
+    // showGameMessage, resetGameUI, updatePileCountsAndLabels (可能需要微调以显示牌型名称)
+    function displayHandAnalysis(analysis) {
+        if (!analysis) return;
+        const displayArea = document.createElement('div');
+        displayArea.style.marginTop = '10px';
+        displayArea.style.padding = '10px';
+        displayArea.style.border = '1px solid #ccc';
+        displayArea.style.backgroundColor = '#f0f0f0';
+        displayArea.style.color = '#333';
+        displayArea.innerHTML = `<h4>牌型分析:</h4>
+            <p>头墩: ${analysis.front.name || '未知'} (${analysis.front.cards.join(', ')})</p>
+            <p>中墩: ${analysis.middle.name || '未知'} (${analysis.middle.cards.join(', ')})</p>
+            <p>尾墩: ${analysis.back.name || '未知'} (${analysis.back.cards.join(', ')})</p>`;
 
-        if (type === 'error') {
-            gameMessageOverlayElement.classList.add('error');
-        } else if (type === 'success') {
-            gameMessageOverlayElement.classList.add('success'); // You might want to add a .success style in CSS
-        }
-        // 'info' uses default style
+        // 清除旧的分析结果（如果存在）
+        const oldAnalysis = document.getElementById('hand-analysis-display');
+        if (oldAnalysis) oldAnalysis.remove();
+        displayArea.id = 'hand-analysis-display';
 
-        gameMessageOverlayElement.classList.add('visible');
-
-        setTimeout(() => {
-            gameMessageOverlayElement.classList.remove('visible');
-        }, message.length > 40 ? 5000 : 3500);
-    }
-
-    function resetGameUI() {
-        originalHand = [];
-        currentMyHandCards = [];
-        frontHandData = [];
-        middleHandData = [];
-        backHandData = [];
-
-        myHandArea.innerHTML = '';
-        frontHandPileWrapper.innerHTML = ''; // Use wrapper
-        middleHandPileWrapper.innerHTML = '';// Use wrapper
-        backHandPileWrapper.innerHTML = ''; // Use wrapper
-
-        dealButton.textContent = '发牌/新局';
-        dealButton.disabled = false;
-        submitButton.style.display = 'none';
-        resetButton.style.display = 'none';
-        sortButton.style.display = 'none';
-
-        myPlayerStatusElement.textContent = "等待开始";
-        myPlayerStatusElement.className = 'player-status waiting';
-        updatePileCountsAndLabels(); // Crucial to reset labels
-    }
-
-    function updatePileCountsAndLabels() { // Renamed for clarity
-        pileDropzones.forEach(zone => {
-            const pileName = zone.id.split('-')[0]; // front, middle, back
-            let currentPileData;
-            let pileDisplayName;
-
-            if (pileName === 'front') {
-                currentPileData = frontHandData;
-                pileDisplayName = "头";
-            } else if (pileName === 'middle') {
-                currentPileData = middleHandData;
-                pileDisplayName = "中";
-            } else { // back
-                currentPileData = backHandData;
-                pileDisplayName = "尾";
-            }
-
-            const maxCards = parseInt(zone.dataset.maxCards);
-            zone.querySelector('.pile-label').textContent = `${pileDisplayName}墩 (${currentPileData.length}/${maxCards})`;
-        });
-    }
-
-
-    // --- Card Creation and Rendering (基本不变) ---
-    function createCardElement(cardStr) {
-        const [suitKey, rankKey] = cardStr.split(' ');
-        const cardDiv = document.createElement('div');
-        cardDiv.classList.add('card');
-        cardDiv.classList.add(getSuitClass(suitKey));
-        cardDiv.dataset.value = cardStr;
-        cardDiv.draggable = true;
-
-        const rankSpan = document.createElement('span');
-        rankSpan.classList.add('rank');
-        rankSpan.textContent = ranks[rankKey] || rankKey;
-
-        const suitSpan = document.createElement('span');
-        suitSpan.classList.add('suit');
-        suitSpan.textContent = suits[suitKey] || suitKey;
-
-        cardDiv.appendChild(rankSpan);
-        cardDiv.appendChild(suitSpan);
-
-        cardDiv.addEventListener('dragstart', handleDragStart);
-        cardDiv.addEventListener('dragend', handleDragEnd);
-        return cardDiv;
-    }
-    // renderMyHandCards, addCardToMyHand, removeCardFromMyHand (基本不变)
-    function renderMyHandCards() {
-        myHandArea.innerHTML = '';
-        currentMyHandCards.forEach(cardObj => {
-            myHandArea.appendChild(cardObj.element);
-        });
-    }
-    function addCardToMyHand(cardValue, doRender = true) {
-        const cardElement = createCardElement(cardValue);
-        currentMyHandCards.push({ value: cardValue, element: cardElement });
-        if (doRender) renderMyHandCards();
-    }
-    function removeCardFromMyHand(cardValue) {
-        currentMyHandCards = currentMyHandCards.filter(c => c.value !== cardValue);
+        // 将分析结果添加到某个显眼位置，例如主游戏区域下方或消息区
+        const mainGameArea = document.getElementById('main-game-area');
+        mainGameArea.appendChild(displayArea); // 或者其他你选择的位置
     }
 
 
     // --- Game Action Handlers ---
     async function handleDealNewHand() {
-        showGameMessage('正在发牌...', 'info');
-        resetGameUI(); // Resets counts and status
-        dealButton.disabled = true;
-        myPlayerStatusElement.textContent = "发牌中";
-        myPlayerStatusElement.className = 'player-status'; // Default green
-
-        try {
-            // ... (fetch logic as before) ...
-            const response = await fetch(`${API_URL}?action=deal`);
-            if (!response.ok) throw new Error(`发牌服务请求失败: ${response.status}`);
-            const data = await response.json();
-
-            if (data.success && data.hand) {
-                originalHand = [...data.hand];
-                originalHand.forEach(cardStr => addCardToMyHand(cardStr, false));
-                renderMyHandCards();
-
-                showGameMessage('请拖拽手牌理牌。', 'info');
-                myPlayerStatusElement.textContent = "理牌中";
-                myPlayerStatusElement.className = 'player-status';
-                dealButton.textContent = '新局';
-                resetButton.style.display = 'inline-block';
-                sortButton.style.display = 'inline-block';
-                // AI buttons can also be shown here if desired
-                document.getElementById('ai-suggest-button').style.display = 'inline-block';
-                document.getElementById('ai-托管-button').style.display = 'inline-block';
-            } else {
-                throw new Error(data.message || '后端发牌逻辑错误');
-            }
-        } catch (error) {
-            console.error('发牌请求失败:', error);
-            showGameMessage(`发牌失败: ${error.message}`, 'error');
-            myPlayerStatusElement.textContent = "发牌失败";
-            myPlayerStatusElement.className = 'player-status error';
-        } finally {
-            dealButton.disabled = false;
-        }
+        // ... (发牌逻辑) ...
+        // 清除上一局的牌型分析
+        const oldAnalysis = document.getElementById('hand-analysis-display');
+        if (oldAnalysis) oldAnalysis.remove();
+        // ... (其他发牌逻辑，显示AI按钮等)
+        // ... (代码与上一版类似，确保显示AI建议按钮)
+        aiSuggestButton.style.display = 'inline-block';
+        // document.getElementById('ai-托管-button').style.display = 'inline-block'; // 托管暂不实现
     }
 
-    function handleSortHand() {
-        // ... (sort logic as before) ...
-        currentMyHandCards.sort((a, b) => {
-            const rankA = rankValues[a.value.split(' ')[1]];
-            const rankB = rankValues[b.value.split(' ')[1]];
-            if (rankA !== rankB) return rankB - rankA;
-            const suitA = a.value.split(' ')[0];
-            const suitB = b.value.split(' ')[0];
-            return suitA.localeCompare(suitB);
-        });
-        renderMyHandCards();
-        showGameMessage('手牌已整理。', 'info');
-    }
 
-    function handleResetArrangement() {
-        // ... (reset logic as before, ensure wrappers are used) ...
-        [...frontHandData, ...middleHandData, ...backHandData].forEach(cardObj => {
-            addCardToMyHand(cardObj.value, false);
-        });
-        renderMyHandCards();
-
-        frontHandData = [];
-        middleHandData = [];
-        backHandData = [];
-
-        frontHandPileWrapper.innerHTML = '';
-        middleHandPileWrapper.innerHTML = '';
-        backHandPileWrapper.innerHTML = '';
-
-        showGameMessage('牌墩已清空，请重新理牌。', 'info');
-        submitButton.style.display = 'none';
-        updatePileCountsAndLabels();
-    }
-
-    async function handleSubmitHand() {
-        // ... (submit logic as before, use new message types) ...
-        const getPileValues = (pileData) => pileData.map(c => c.value);
-
-        if (frontHandData.length !== 3 || middleHandData.length !== 5 || backHandData.length !== 5) {
-            showGameMessage('牌墩张数不正确！头3中5尾5。', 'error');
+    async function handleAiSuggest() {
+        if (currentMyHandCards.length === 0 && originalHand.length === 0) {
+            showGameMessage('请先发牌后再使用AI建议。', 'error');
             return;
         }
-        // ... rest of submit logic
-        const payload = { /* ... */ };
-        showGameMessage('正在提交牌型...', 'info');
-        // ... try-catch fetch ...
-        // On success: showGameMessage(`提交成功！结果：${result.message || '等待后端详细结果'}`, 'success');
-        // On backend reject: showGameMessage(`提交被拒：${result.message}`, 'error');
-        // On fetch error: showGameMessage(`提交出错：${error.message}`, 'error');
+        // AI 建议应该基于当前手牌区和未摆放的牌，或者原始13张牌
+        // 为简单起见，我们基于 originalHand (如果玩家已理牌，这可能不是最佳选择)
+        // 或者，更好的做法是收集所有未放入墩的牌 + 已放入墩的牌，组成当前完整的13张。
+        // 目前我们用 originalHand，如果游戏已开始且有牌在手牌区，则用手牌区。
 
-        // Player status updates
-        myPlayerStatusElement.textContent = "比牌中...";
-        myPlayerStatusElement.className = 'player-status';
-        // After result:
-        // myPlayerStatusElement.textContent = "本局结束";
-        // myPlayerStatusElement.className = 'player-status waiting'; // Or similar for end of round
+        let handToSuggest = [];
+        if (currentMyHandCards.length > 0) { // 如果手牌区有牌 (意味着可能已部分理牌)
+            // 合并手牌区和已摆放的牌
+            handToSuggest = currentMyHandCards.map(c => c.value)
+                             .concat(frontHandData.map(c => c.value))
+                             .concat(middleHandData.map(c => c.value))
+                             .concat(backHandData.map(c => c.value));
+            // 去重，确保是13张
+            handToSuggest = [...new Set(handToSuggest)];
+            if (handToSuggest.length !== 13 && originalHand.length === 13) {
+                // 如果合并后不是13张，可能逻辑有误，退回使用原始手牌
+                console.warn("AI Suggest: Failed to reconstruct 13 cards, using original hand.");
+                handToSuggest = [...originalHand];
+            } else if (handToSuggest.length !== 13) {
+                 showGameMessage('AI建议需要完整的13张手牌信息。', 'error');
+                 return;
+            }
 
-        // Example of a more complete submit handler:
-        const frontValues = getPileValues(frontHandData);
-        const middleValues = getPileValues(middleHandData);
-        const backValues = getPileValues(backHandData);
+        } else if (originalHand.length === 13) {
+            handToSuggest = [...originalHand];
+        } else {
+            showGameMessage('没有足够的手牌进行AI建议。', 'error');
+            return;
+        }
+
+
+        showGameMessage('AI正在思考建议...', 'info');
+        aiSuggestButton.disabled = true;
+
+        try {
+            const response = await fetch(`${API_URL}?action=aiSuggest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hand: handToSuggest }),
+            });
+            const result = await response.json();
+
+            if (result.success && result.suggestion) {
+                showGameMessage('AI建议已生成 (仅供参考，不保证最优或不倒水！)', 'info');
+                // 将建议的牌自动摆放到牌墩 (用户体验好)
+                // 1. 清空现有牌墩
+                handleResetArrangement(); // 这会把所有牌移回手牌区
+
+                // 2. 从手牌区找到建议的牌并移动到对应牌墩
+                placeSuggestedCards(result.suggestion.front, frontHandPileWrapper, frontHandData);
+                placeSuggestedCards(result.suggestion.middle, middleHandPileWrapper, middleHandData);
+                placeSuggestedCards(result.suggestion.back, backHandPileWrapper, backHandData);
+
+                updatePileCountsAndLabels();
+                checkIfReadyToSubmit();
+
+            } else {
+                showGameMessage(`AI建议失败：${result.message || '未知错误'}`, 'error');
+            }
+        } catch (error) {
+            console.error('AI建议请求失败:', error);
+            showGameMessage(`AI建议请求异常：${error.message}`, 'error');
+        } finally {
+            aiSuggestButton.disabled = false;
+        }
+    }
+
+    function placeSuggestedCards(suggestedCardsArray, targetPileWrapper, targetPileDataArray) {
+        suggestedCardsArray.forEach(cardValueToPlace => {
+            const cardIndexInHand = currentMyHandCards.findIndex(cardObj => cardObj.value === cardValueToPlace);
+            if (cardIndexInHand > -1) {
+                const cardObj = currentMyHandCards.splice(cardIndexInHand, 1)[0]; // 从手牌数据中移除
+                targetPileDataArray.push(cardObj); // 添加到墩数据
+                targetPileWrapper.appendChild(cardObj.element); // 移动DOM元素
+            } else {
+                console.warn(`AI Suggest: Card ${cardValueToPlace} not found in current hand to place in pile.`);
+            }
+        });
+        renderMyHandCards(); // 更新手牌区（如果还有剩余的牌，理论上AI建议会用完13张）
+    }
+
+
+    async function handleSubmitHand() {
+        // ... (获取三墩牌的逻辑不变) ...
+        const frontValues = frontHandData.map(c => c.value);
+        const middleValues = middleHandData.map(c => c.value);
+        const backValues = backHandData.map(c => c.value);
 
         if (frontValues.length !== 3 || middleValues.length !== 5 || backValues.length !== 5) {
             showGameMessage('牌墩张数不正确！请确保头3中5尾5。', 'error');
             return;
         }
 
-        const finalPayload = {
+        const payload = {
             front: frontValues,
             middle: middleValues,
             back: backValues
         };
 
         showGameMessage('正在提交牌型...', 'info');
+        // ... (禁用按钮等UI操作) ...
         submitButton.disabled = true;
         resetButton.disabled = true;
         sortButton.disabled = true;
+        aiSuggestButton.disabled = true;
         myPlayerStatusElement.textContent = "比牌中...";
         myPlayerStatusElement.className = 'player-status';
 
+        // 清除上一局的牌型分析
+        const oldAnalysis = document.getElementById('hand-analysis-display');
+        if (oldAnalysis) oldAnalysis.remove();
 
         try {
             const response = await fetch(`${API_URL}?action=submitHand`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(finalPayload),
+                body: JSON.stringify(payload),
             });
-
             const result = await response.json();
-            if (!response.ok) {
+
+            if (!response.ok) { // HTTP error status
                 throw new Error(result.message || `提交失败: HTTP ${response.status}`);
             }
 
             if (result.success) {
-                showGameMessage(`提交成功！${result.message || '等待结果...'}`, 'success');
-                submitButton.style.display = 'none'; // Hide after successful submission
+                showGameMessage(`比牌完成！${result.message || ''} 得分: ${result.score || 0}`, 'success');
+                if (result.analysis) {
+                    displayHandAnalysis(result.analysis); // 显示后端分析的牌型
+                }
                 myPlayerStatusElement.textContent = "本局结束";
-                myPlayerStatusElement.className = 'player-status waiting'; // Ready for new game
-
-            } else {
+                myPlayerStatusElement.className = 'player-status waiting';
+                // 可以在这里更新总积分 myPlayerScoreElement
+                // submitButton.style.display = 'none'; // 隐藏提交按钮，直到下一局
+            } else { // 后端逻辑验证失败 (例如倒水)
                 showGameMessage(`提交被拒：${result.message}`, 'error');
+                if (result.analysis) { // 如果后端返回了分析（例如倒水时也分析牌型）
+                    displayHandAnalysis(result.analysis);
+                }
                 myPlayerStatusElement.textContent = "理牌错误";
                 myPlayerStatusElement.className = 'player-status error';
+                // 重新启用按钮让玩家修改
+                submitButton.disabled = false;
+                resetButton.disabled = false;
+                sortButton.disabled = false;
+                aiSuggestButton.disabled = false;
             }
-
         } catch (error) {
             console.error('提交牌型失败:', error);
             showGameMessage(`提交出错：${error.message}`, 'error');
             myPlayerStatusElement.textContent = "提交异常";
             myPlayerStatusElement.className = 'player-status error';
-        } finally {
-            if (myPlayerStatusElement.textContent !== "本局结束") {
-                 submitButton.disabled = false;
-                 resetButton.disabled = false;
-                 sortButton.disabled = false;
-            }
-        }
-    }
-
-
-    function checkIfReadyToSubmit() {
-        // ... (logic as before) ...
-        const totalArranged = frontHandData.length + middleHandData.length + backHandData.length;
-        if (totalArranged === 13 && currentMyHandCards.length === 0) {
-            submitButton.style.display = 'inline-block';
+            // 重新启用按钮
             submitButton.disabled = false;
-        } else {
-            submitButton.style.display = 'none';
+            resetButton.disabled = false;
+            sortButton.disabled = false;
+            aiSuggestButton.disabled = false;
         }
     }
 
+    // ... (checkIfReadyToSubmit, Drag and Drop Handlers, Utility functions as before) ...
+    // 确保在 handleDrop 和 handleResetArrangement 中调用 updatePileCountsAndLabels();
+    // 确保在 dragstart 时，如果卡牌来自牌墩，正确记录 draggedCard.sourcePile
 
-    // --- Drag and Drop Handlers (ensure wrappers are used for drop targets) ---
-    function handleDrop(e) {
-        e.preventDefault();
-        const dropzoneElement = e.target.closest('.hand-pile-dropzone');
-        if (!dropzoneElement || !draggedCard) return;
-
-        dropzoneElement.classList.remove('drag-over');
-        const targetPileName = dropzoneElement.dataset.pileName;
-        const targetPileWrapper = dropzoneElement.querySelector('.cards-wrapper'); // Important: drop into wrapper
-        const maxCards = parseInt(dropzoneElement.dataset.maxCards);
-
-        let targetPileData;
-        if (targetPileName === 'front') targetPileData = frontHandData;
-        else if (targetPileName === 'middle') targetPileData = middleHandData;
-        else targetPileData = backHandData;
-
-        if (targetPileData.length < maxCards) {
-            if (draggedCard.sourcePile === 'myHandArea') {
-                removeCardFromMyHand(draggedCard.value);
-            } else if (draggedCard.sourcePile) {
-                removeCardFromPile(draggedCard.value, draggedCard.sourcePile);
-            }
-
-            targetPileData.push({value: draggedCard.value, element: draggedCard.element});
-            targetPileWrapper.appendChild(draggedCard.element); // Append to wrapper
-
-            updatePileCountsAndLabels(); // Update labels
-            checkIfReadyToSubmit();
-
-        } else {
-            showGameMessage(`${targetPileName.charAt(0).toUpperCase() + targetPileName.slice(1)}墩已满!`, 'error');
-        }
-        draggedCard = null;
-    }
-    // handleDragStart, handleDragEnd, handleDragOver, handleDragEnter, handleDragLeave, removeCardFromPile (基本不变)
-    function handleDragStart(e) {
-        draggedCard = {
-            value: e.target.dataset.value,
-            element: e.target,
-            sourcePile: null
-        };
-        if (e.target.parentElement === myHandArea) {
-            draggedCard.sourcePile = 'myHandArea';
-        } else {
-            pileDropzones.forEach(zone => {
-                if (zone.querySelector('.cards-wrapper').contains(e.target)) {
-                    draggedCard.sourcePile = zone.dataset.pileName;
-                }
-            });
-        }
-        e.dataTransfer.setData('text/plain', draggedCard.value);
-        e.dataTransfer.effectAllowed = 'move';
-        e.target.classList.add('dragging');
-        setTimeout(() => e.target.style.opacity = '0.6', 0); // Reduced opacity for dragging
-    }
-
-    function handleDragEnd(e) {
-        if (e.target) { // Check if target still exists
-            e.target.classList.remove('dragging');
-            e.target.style.opacity = '1';
-        }
-        draggedCard = null;
-        pileDropzones.forEach(zone => zone.classList.remove('drag-over'));
-    }
-
-    function handleDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    }
-
-    function handleDragEnter(e) {
-        e.preventDefault();
-        const dropzone = e.target.closest('.hand-pile-dropzone');
-        if (dropzone) {
-            dropzone.classList.add('drag-over');
-        }
-    }
-
-    function handleDragLeave(e) {
-        const dropzone = e.target.closest('.hand-pile-dropzone');
-        if (dropzone) {
-            if (!dropzone.contains(e.relatedTarget)) {
-                dropzone.classList.remove('drag-over');
-            }
-        }
-    }
-
-    function removeCardFromPile(cardValue, pileName) {
-        if (pileName === 'front') frontHandData = frontHandData.filter(c => c.value !== cardValue);
-        else if (pileName === 'middle') middleHandData = middleHandData.filter(c => c.value !== cardValue);
-        else if (pileName === 'back') backHandData = backHandData.filter(c => c.value !== cardValue);
-    }
-
-
-    // --- Utility (不变) ---
-    function getSuitClass(suitKey) {
-        // ... (as before) ...
-        const suitLower = suitKey.toLowerCase();
-        if (suitLower === 'h') return 'hearts';
-        if (suitLower === 'd') return 'diamonds';
-        if (suitLower === 's') return 'spades';
-        if (suitLower === 'c') return 'clubs';
-        return '';
-    }
 });
