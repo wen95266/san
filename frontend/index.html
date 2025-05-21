@@ -3,49 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>十三水游戏</title>
+    <title>十三水 - 经典桌面布局</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-table">
-        <!-- 1. 对手牌墩区域 (顶部占位) -->
-        <div id="opponent-piles-area" class="piles-row">
-            <div class="opponent-pile-slot"><div class="slot-label">对手尾</div></div>
-            <div class="opponent-pile-slot"><div class="slot-label">对手中</div></div>
+        <!-- 1. 对手牌墩区域 (顶部) -->
+        <div id="opponent-piles-display-area" class="piles-row">
             <div class="opponent-pile-slot"><div class="slot-label">对手头</div></div>
-            <!-- 可以根据需要增加更多对手槽位 -->
+            <div class="opponent-pile-slot"><div class="slot-label">对手中</div></div>
+            <div class="opponent-pile-slot"><div class="slot-label">对手尾</div></div>
+            <!-- 可以根据需要增加更多对手槽位，或者只显示一个总的对手区域 -->
         </div>
 
-        <!-- 2. 玩家摆牌区 与 牌型分析区 -->
-        <div id="player-main-zone">
-            <div id="player-arrangement-piles" class="piles-row">
-                <div class="hand-pile-dropzone" id="front-hand-pile" data-pile-name="front" data-max-cards="3">
+        <!-- 2. 中心桌面区域 (红色涂抹区域) -->
+        <div id="center-table-graphic-area">
+            <!-- 这个区域主要是视觉分隔，可以放游戏logo或桌面纹理 -->
+        </div>
+
+        <!-- 3. 玩家摆牌区 与 牌型分析区 -->
+        <div id="player-arrangement-and-analysis-zone">
+            <div id="my-player-piles" class="piles-row">
+                <div class="hand-pile-dropzone player-self-pile" id="front-hand-pile" data-pile-name="front" data-max-cards="3">
                     <div class="pile-label">头墩 (0/3)</div>
                     <div class="cards-wrapper"></div>
                 </div>
-                <div class="hand-pile-dropzone" id="middle-hand-pile" data-pile-name="middle" data-max-cards="5">
+                <div class="hand-pile-dropzone player-self-pile" id="middle-hand-pile" data-pile-name="middle" data-max-cards="5">
                     <div class="pile-label">中墩 (0/5)</div>
                     <div class="cards-wrapper"></div>
                 </div>
-                <div class="hand-pile-dropzone" id="back-hand-pile" data-pile-name="back" data-max-cards="5">
+                <div class="hand-pile-dropzone player-self-pile" id="back-hand-pile" data-pile-name="back" data-max-cards="5">
                     <div class="pile-label">尾墩 (0/5)</div>
                     <div class="cards-wrapper"></div>
                 </div>
             </div>
             <div id="hand-analysis-display">
-                <!-- 牌型分析将显示在这里 -->
+                <!-- 牌型分析 -->
             </div>
         </div>
 
-        <!-- 3. 玩家手牌区 (横向直线) -->
-        <div id="player-hand-cards-area" class="cards-container">
-            <!-- 13张手牌将显示在这里 -->
+        <!-- 4. 玩家手牌区 (最底部横向直线) -->
+        <div id="player-hand-cards-bottom-bar" class="cards-container">
+            <!-- 13张手牌 -->
         </div>
 
-        <!-- 4. 底部控制面板 -->
+        <!-- 5. 底部控制面板 -->
         <div id="controls-panel">
             <div class="player-info">
-                <span id="player-name-display">玩家名称</span>
+                <span id="player-name-display">玩家ID</span>
                 <span id="player-score-display">本局得分: 0</span>
                 <span id="ai-托管-info" style="display:none;"></span>
             </div>
@@ -54,15 +59,12 @@
                 <button id="sort-btn" class="game-btn" style="display: none;">整理</button>
                 <button id="reset-btn" class="game-btn" style="display: none;">重摆</button>
                 <button id="ai-suggest-btn" class="game-btn" style="display: none;">AI建议</button>
-                <button id="ai-托管-btn" class="game-btn" style="display: none;">AI托管</button>
+                <button id="ai-托管-btn" class="game-btn ai-托管-style" style="display: none;">AI托管</button>
                 <button id="submit-btn" class="game-btn submit" style="display: none;">开始比牌</button>
             </div>
         </div>
 
-        <!-- 游戏消息浮层 -->
         <div id="game-message-popup" style="display:none;"><p></p></div>
-
-        <!-- AI托管局数选择模态框 -->
         <div id="ai-托管-options-modal" class="modal-overlay" style="display:none;">
             <div class="modal-content">
                 <h4>选择AI托管局数</h4>
