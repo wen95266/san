@@ -1,5 +1,9 @@
+// 这部分代码与您上一轮提供的、我已确认无明显语法错误并补充了缺失部分的 script.js 基本一致。
+// 为确保完整性，我会复制上一轮的最终版本。
+// 请确认这里的 API_URL 是您正确的后端地址。
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("十三水游戏脚本初始化 - 经典桌面布局");
+    console.log("十三水游戏脚本初始化 - 经典桌面布局 vFinal");
 
     // DOM Elements
     const dealBtn = document.getElementById('deal-btn');
@@ -30,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ai托管OptionsModal = document.getElementById('ai-托管-options-modal');
 
     // API URL
-    const API_URL = 'https://9526.ip-ddns.com/thirteen_api/api.php';
+    const API_URL = 'https://9526.ip-ddns.com/thirteen_api/api.php'; // 您的API地址
     console.log("API URL:", API_URL);
 
     // Card Definitions
@@ -50,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const AI_OPERATION_DELAY = 1200;
     const AI_NEXT_ROUND_DELAY = 2500;
 
-    // --- Initialization ---
     function initGame() {
         console.log("SCRIPT: Initializing game...");
         setupEventListeners();
@@ -60,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("SCRIPT: Game initialized.");
     }
 
-    // --- Event Listeners ---
     function setupEventListeners() {
         console.log("SCRIPT: Setting up event listeners...");
         dealBtn?.addEventListener('click', () => handleDealNewHand());
@@ -81,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playerHandArea?.addEventListener('dragover', handleDragOver);
         playerHandArea?.addEventListener('drop', handleDropOnPlayerHandArea);
 
-        ai托管OptionsModal?.querySelectorAll('button.game-btn').forEach(button => { // More specific selector
+        ai托管OptionsModal?.querySelectorAll('button.game-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const rounds = parseInt(e.target.dataset.rounds);
                 selectAi托管Rounds(rounds);
@@ -90,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("SCRIPT: Event listeners setup complete.");
     }
 
-    // --- UI Update Functions ---
     function showGameMessage(message, type = 'info', duration = 3000) {
         if (!gameMessagePopup || !gameMessagePopup.firstChild) {
             console.error("SCRIPT ERROR: Game message popup or its p tag not found for message:", message);
@@ -101,9 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gameMessagePopup.className = '';
         if (type === 'error') gameMessagePopup.classList.add('error');
         else if (type === 'success') gameMessagePopup.classList.add('success');
-        
+
         gameMessagePopup.style.display = 'block';
-        setTimeout(() => { gameMessagePopup.classList.add('visible'); }, 10); // Allow display to apply before transition
+        setTimeout(() => { gameMessagePopup.classList.add('visible'); }, 10);
 
         setTimeout(() => {
             gameMessagePopup.classList.remove('visible');
@@ -111,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (!gameMessagePopup.classList.contains('visible')) {
                     gameMessagePopup.style.display = 'none';
                  }
-            }, 350); // Slightly longer than CSS transition
+            }, 350);
         }, duration);
     }
 
@@ -153,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(ai托管Btn) ai托管Btn.style.display = showGameInProgressButtons && !isAi托管Active ? 'inline-block' : 'none';
         if(submitBtn) submitBtn.style.display = 'none';
     }
-    
+
     function displayAnalysis(analysisData) {
         if(!handAnalysisDisplay) { console.warn("Analysis display area not found."); return; }
         let html = '<h4>牌型分析:</h4>';
@@ -168,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         handAnalysisDisplay.innerHTML = html;
     }
 
-    // --- Card Element Creation & Rendering ---
     function createCardDOMElement(cardValue) {
         const [suitCharServer, rankChar] = cardValue.split(' ');
         const suitChar = suitCharServer.charAt(0).toUpperCase();
@@ -180,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.draggable = true;
         el.innerHTML = `<span class="rank">${RANKS_DISPLAY[rankChar] || rankChar}</span>
                         <span class="suit">${SUITS_DISPLAY[suitChar] || suitChar}</span>`;
-        // Drag listeners added where card is placed
         return el;
     }
 
@@ -188,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!playerHandArea) { console.error("Player hand area not found to render."); return; }
         playerHandArea.innerHTML = '';
         currentHandCards.forEach(cardObj => {
-            cardObj.element.removeEventListener('dragstart', handleDragStart); // Clean up just in case
+            cardObj.element.removeEventListener('dragstart', handleDragStart);
             cardObj.element.addEventListener('dragstart', (e) => handleDragStart(e, cardObj.element, 'bottomHand'));
             cardObj.element.removeEventListener('dragend', handleDragEnd);
             cardObj.element.addEventListener('dragend', handleDragEnd);
@@ -201,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const element = createCardDOMElement(cardValue);
         currentHandCards.push({ value: cardValue, element });
     }
-    
+
     function removeCardFromHandData(cardValue) {
         currentHandCards = currentHandCards.filter(c => c.value !== cardValue);
     }
@@ -220,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
         arrangedPilesData[pileName] = arrangedPilesData[pileName].filter(c => c.value !== cardValue);
     }
 
-    // --- Game Logic Handlers ---
     async function handleDealNewHand(isAiCall = false) {
         console.log("SCRIPT: handleDealNewHand called. AI Call:", isAiCall);
         if (!isAiCall && isAi托管Active) {
@@ -360,14 +358,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if(aiSuggestBtn) aiSuggestBtn.disabled = true; if(ai托管Btn) ai托管Btn.disabled = true;
         }
         if(handAnalysisDisplay) handAnalysisDisplay.innerHTML = '';
+        let resultText = ""; // For debugging raw response
 
         try {
             const response = await fetch(`${API_URL}?action=submitHand`, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
-            const resultText = await response.text(); // Get raw text first
-            const result = JSON.parse(resultText);    // Then try to parse
+            resultText = await response.text();
+            const result = JSON.parse(resultText);
 
             if (!response.ok) throw new Error(result.message || `提交API失败: ${response.status}`);
 
@@ -379,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.analysis) displayAnalysis(result.analysis);
                 if(playerScoreDisplay && result.score !== undefined) playerScoreDisplay.textContent = `本局得分: ${result.score}`;
-                if(roundResultButton) roundResultButton.style.display = 'inline-block';
+                // if(roundResultButton) roundResultButton.style.display = 'inline-block'; // Not used yet
                 if(submitBtn) submitBtn.style.display = 'none';
 
                 if(isAi托管Active) {
@@ -395,9 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return Promise.resolve(result);
             } else {
-                const errMsg = `提交被拒：${result.message}`;
+                const errMsg = `提交被拒：${result.message || "未知原因"}`;
                 if(!isAiCall) showGameMessage(errMsg, "error");
-                else showGameMessage(`AI托管: 提交失败 - ${result.message}. 托管停止.`, "error");
+                else showGameMessage(`AI托管: 提交失败 - ${result.message || "未知原因"}. 托管停止.`, "error");
 
                 if (result.analysis) displayAnalysis(result.analysis);
                 if (isAi托管Active) stopAi托管();
@@ -406,11 +405,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(sortBtn) sortBtn.disabled = false; if(aiSuggestBtn) aiSuggestBtn.disabled = false;
                     if(ai托管Btn) ai托管Btn.disabled = false;
                 }
-                return Promise.reject(result.message);
+                return Promise.reject(result.message || "后端逻辑错误");
             }
         } catch (err) {
-            console.error("提交错误:", err, "Raw response text was:", resultText || "N/A");
-            const displayError = err.message.includes("JSON.parse") ? "服务器响应格式错误" : err.message;
+            console.error("提交错误:", err, "Raw response text:", resultText);
+            const displayError = err.message && err.message.includes("JSON.parse") ? "服务器响应格式错误" : (err.message || "未知提交错误");
             if(!isAiCall) showGameMessage(`提交错误: ${displayError}`, "error");
             else showGameMessage(`AI托管: 提交异常 - ${displayError}. 托管停止.`, "error");
 
@@ -420,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(sortBtn) sortBtn.disabled = false; if(aiSuggestBtn) aiSuggestBtn.disabled = false;
                 if(ai托管Btn) ai托管Btn.disabled = false;
             }
-            return Promise.reject(err.message);
+            return Promise.reject(err.message || "提交捕获异常");
         }
     }
 
@@ -436,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Drag and Drop Handlers ---
     function handleDragStart(e, cardElement, sourceArea, sourcePileName = null) {
         draggedCardInfo = {
             value: cardElement.dataset.value,
@@ -444,8 +442,12 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceArea: sourceArea,
             sourcePileName: sourcePileName
         };
-        e.dataTransfer.setData('text/plain', draggedCardInfo.value);
-        e.dataTransfer.effectAllowed = 'move';
+        try {
+            e.dataTransfer.setData('text/plain', draggedCardInfo.value);
+            e.dataTransfer.effectAllowed = 'move';
+        } catch (ex) {
+            console.warn("Error setting dataTransfer:", ex); // IE might have issues
+        }
         setTimeout(() => cardElement.classList.add('dragging'), 0);
     }
     function handleDragEnd(e) {
@@ -483,10 +485,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (draggedCardInfo.sourceArea === 'bottomHand') {
                 removeCardFromHandData(draggedCardInfo.value);
                 renderPlayerHand();
-            } else if (draggedCardInfo.sourceArea === 'pile' && draggedCardInfo.sourcePileName) {
+            } else if (draggedCardInfo.sourceArea === 'pile' && draggedCardInfo.sourcePileName !== targetPileName) { // Allow moving between piles
                 removeCardFromPileData(draggedCardInfo.value, draggedCardInfo.sourcePileName);
                 // No need to re-render source pile wrapper, element is moved directly
+            } else if (draggedCardInfo.sourceArea === 'pile' && draggedCardInfo.sourcePileName === targetPileName) {
+                // Dropped onto the same pile it came from - do nothing or just re-append
+                targetPileWrapper.appendChild(draggedCardInfo.element); // Ensure it's visually there
+                return;
             }
+
 
             addCardToPileData(draggedCardInfo.value, targetPileName, draggedCardInfo.element);
             targetPileWrapper.appendChild(draggedCardInfo.element);
@@ -495,12 +502,15 @@ document.addEventListener('DOMContentLoaded', () => {
             checkIfReadyToSubmit();
         } else {
             showGameMessage(`${targetPileName.charAt(0).toUpperCase() + targetPileName.slice(1)}墩已满!`, "error");
-            if (draggedCardInfo.sourceArea === 'bottomHand' && playerHandArea) {
-                if (!playerHandArea.contains(draggedCardInfo.element)) { // Ensure it's visually back if it was removed
-                    playerHandArea.appendChild(draggedCardInfo.element);
+            // Revert card to its original place if drop failed
+            if (draggedCardInfo.sourceArea === 'bottomHand' && playerHandArea && !playerHandArea.contains(draggedCardInfo.element)) {
+                playerHandArea.appendChild(draggedCardInfo.element); // Put it back
+            } else if (draggedCardInfo.sourceArea === 'pile' && draggedCardInfo.sourcePileName) {
+                const sourcePileWrapper = pileWrappers[draggedCardInfo.sourcePileName];
+                if (sourcePileWrapper && !sourcePileWrapper.contains(draggedCardInfo.element)) {
+                    sourcePileWrapper.appendChild(draggedCardInfo.element); // Put it back
                 }
             }
-            // If from another pile, it might just visually snap back (dragend handles class removal)
         }
     }
 
@@ -508,21 +518,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (!draggedCardInfo || draggedCardInfo.sourceArea === 'bottomHand') {
              if (draggedCardInfo && draggedCardInfo.sourceArea === 'bottomHand' && playerHandArea) {
-                 playerHandArea.appendChild(draggedCardInfo.element); // Simple re-append for visual reorder
+                 playerHandArea.appendChild(draggedCardInfo.element);
              }
             return;
         }
         if (draggedCardInfo.sourceArea === 'pile' && draggedCardInfo.sourcePileName) {
             removeCardFromPileData(draggedCardInfo.value, draggedCardInfo.sourcePileName);
-            addCardToHandData(draggedCardInfo.value); // This will create a new DOM element for hand
-            renderPlayerHand(); // Re-render hand with the new card element
+            addCardToHandData(draggedCardInfo.value); // Creates new element for hand
+            renderPlayerHand();
 
             updatePileLabels();
             checkIfReadyToSubmit();
         }
     }
 
-    // --- AI 托管 Functions ---
     function toggleAi托管Modal() {
         if (isAi托管Active) {
             stopAi托管();
@@ -546,10 +555,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(submitBtn) submitBtn.style.display = 'none';
 
         showGameMessage(`AI托管启动，共 ${rounds} 局。`, "success");
-        if (currentHandCards.length === 0 && arrangedPilesData.front.length === 0) { // Check if a game isn't already mid-way
+        if (currentHandCards.length === 0 && arrangedPilesData.front.length === 0) {
             handleDealNewHand(true);
         } else {
-            ai托管ProcessRound(); // Process current hand if already dealt
+             ai托管ProcessRound();
         }
     }
     function stopAi托管() {
@@ -557,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ai托管RoundsLeft = 0;
         updateAi托管UIState();
         if(dealBtn) dealBtn.disabled = false;
-        toggleActionButtons(originalDealtHand.length > 0); // Show buttons if game was in progress
+        toggleActionButtons(originalDealtHand.length > 0);
         checkIfReadyToSubmit();
     }
     function updateAi托管UIState() {
@@ -567,7 +576,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(ai托管Btn) {
             ai托管Btn.textContent = isAi托管Active ? `取消托管 (${ai托管RoundsLeft})` : 'AI托管';
-            // Only show AI托管 button if a game has started (originalDealtHand is populated)
             ai托管Btn.style.display = (originalDealtHand.length > 0 || isAi托管Active) ? 'inline-block' : 'none';
         }
     }
@@ -575,7 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isAi托管Active || ai托管RoundsLeft <= 0) {
             if(isAi托管Active) stopAi托管(); return;
         }
-        console.log(`SCRIPT: AI托管 processing round ${ai托管RoundsTotal - ai托管RoundsLeft + 1}`);
         updateAi托管UIState();
         try {
             showGameMessage(`AI托管: 理牌中... (${ai托管RoundsLeft}/${ai托管RoundsTotal})`, "info", AI_OPERATION_DELAY);
@@ -592,7 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Utility ---
     function getSuitClass(suitKey) {
         const s = suitKey.charAt(0).toLowerCase();
         if (s === 'h') return 'hearts'; if (s === 'd') return 'diamonds';
@@ -600,6 +606,5 @@ document.addEventListener('DOMContentLoaded', () => {
         return '';
     }
 
-    // --- Start the game ---
     initGame();
 });
