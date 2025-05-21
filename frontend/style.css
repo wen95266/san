@@ -17,10 +17,10 @@ body {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 100%;
-    max-width: 600px;
+    max-width: 700px; /* 稍微加宽一点以容纳牌墩 */
 }
 
-h1, h2 {
+h1, h2, h3, h4 {
     color: #333;
 }
 
@@ -28,8 +28,8 @@ h1, h2 {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px; /* 稍微减小间距 */
+    margin-top: 10px;
     padding: 10px;
     border: 1px solid #ddd;
     min-height: 80px;
@@ -38,8 +38,8 @@ h1, h2 {
 }
 
 .card {
-    width: 50px;
-    height: 70px;
+    width: 45px; /* 稍微减小卡牌尺寸 */
+    height: 65px;
     border: 1px solid #aaa;
     border-radius: 5px;
     background-color: white;
@@ -47,17 +47,34 @@ h1, h2 {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 5px;
-    font-size: 16px;
+    padding: 4px;
+    font-size: 14px;
     font-weight: bold;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer; /* 添加指针样式 */
+    transition: transform 0.1s ease-in-out, border-color 0.1s ease-in-out; /* 平滑过渡 */
+}
+.card:hover {
+    border-color: #007bff;
 }
 
+.card.selected {
+    border: 2px solid #007bff;
+    transform: translateY(-3px) scale(1.05); /* 选中效果 */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+.card.in-pile { /* 在牌墩中的牌，不可再选 */
+    cursor: default;
+    opacity: 0.8;
+}
+
+
 .card .rank {
-    font-size: 1.2em;
+    font-size: 1.1em;
 }
 .card .suit {
-    font-size: 1em;
+    font-size: 0.9em;
 }
 .card.hearts, .card.diamonds { color: red; }
 .card.spades, .card.clubs { color: black; }
@@ -77,6 +94,10 @@ h1, h2 {
 .controls button:hover {
     background-color: #0056b3;
 }
+.controls button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
 
 .info-area {
     margin-top: 20px;
@@ -84,4 +105,35 @@ h1, h2 {
     background-color: #f9f9f9;
     border: 1px solid #eee;
     border-radius: 4px;
+}
+
+/* 新增样式 */
+.arranged-hands {
+    margin-top: 25px;
+    border-top: 1px dashed #ccc;
+    padding-top: 15px;
+}
+
+.hand-pile {
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #fdfdfd;
+}
+
+.hand-pile h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    color: #555;
+}
+
+.pile-container { /* 牌墩的容器样式 */
+    min-height: 75px;
+    background-color: #f0f8ff; /*淡蓝色背景，区分手牌区*/
+    border: 1px dashed #a0c0e0;
+}
+.pile-container.can-place { /* 用于提示可以放置的高亮 */
+    outline: 2px dashed green;
 }
