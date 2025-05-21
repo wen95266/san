@@ -13,13 +13,30 @@
         <div class="player-area">
             <h2>我的手牌</h2>
             <div id="my-cards" class="cards-container">
-                <!-- 卡牌将在这里显示 -->
+                <!-- 原始手牌将在这里显示 -->
+            </div>
+        </div>
+
+        <div class="arranged-hands">
+            <h3>你的牌墩 (点击上方手牌，再点击下方牌墩放置)</h3>
+            <div class="hand-pile">
+                <h4>头墩 (3张)</h4>
+                <div id="front-hand" class="cards-container pile-container" data-max-cards="3" data-pile-name="front"></div>
+            </div>
+            <div class="hand-pile">
+                <h4>中墩 (5张)</h4>
+                <div id="middle-hand" class="cards-container pile-container" data-max-cards="5" data-pile-name="middle"></div>
+            </div>
+            <div class="hand-pile">
+                <h4>尾墩 (5张)</h4>
+                <div id="back-hand" class="cards-container pile-container" data-max-cards="5" data-pile-name="back"></div>
             </div>
         </div>
 
         <div class="controls">
             <button id="deal-button">发牌</button>
-            <button id="submit-button" style="display:none;">提交牌型 (功能待实现)</button>
+            <button id="submit-button" style="display:none;">提交牌型</button>
+            <button id="reset-arrangement-button" style="display:none;">重新理牌</button>
         </div>
 
         <div class="info-area">
