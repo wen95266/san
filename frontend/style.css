@@ -11,12 +11,11 @@ body {
     flex-direction: column;
     height: 100vh;
     width: 100vw;
-    padding: 10px; /* 整体边距 */
-    gap: 10px; /* 主要区域之间的间距 */
+    padding: 10px;
 }
 
 /* 通用横向排列容器 */
-.piles-row, .cards-container {
+.piles-row {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -25,171 +24,150 @@ body {
 
 /* --- 1. 对手牌墩区域 --- */
 #opponent-piles-display-area {
-    min-height: 80px;
-    padding-bottom: 5px; /* 与下方区域的间距 */
-    /* border-bottom: 1px solid rgba(255,255,255,0.1); */
+    min-height: 70px; /* 减小一点 */
+    padding-bottom: 5px;
 }
 .opponent-pile-slot {
-    width: 70px; height: 90px;
-    background-color: rgba(0,0,0,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
+    width: 65px; height: 85px;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
     display: flex; justify-content: center; align-items: center;
 }
-.opponent-pile-slot .slot-label { font-size: 0.7em; color: rgba(255,255,255,0.5); }
+.opponent-pile-slot .slot-label { font-size: 0.65em; color: rgba(255,255,255,0.4); }
 
+/* --- 2. 主要游戏内容区 --- */
+#main-game-content-wrapper {
+    flex-grow: 1; /* 占据主要空间 */
+    display: grid; /* 使用 Grid 布局来实现复杂的定位 */
+    grid-template-columns: 1fr auto 1fr; /* 左边空白 | 中间内容 | 右边牌型分析 */
+    grid-template-rows: auto 1fr auto;    /* 上方尾墩 | 中央手牌 | 下方头中墩 */
+    grid-template-areas:
+        ".    center-hand back-pile"
+        "lower-piles center-hand arranged-analysis" /* 让手牌区跨越多行，或调整 */
+        "lower-piles .         .";
+    align-items: center; /* 整体垂直居中 */
+    justify-items: center; /* 整体水平居中 */
+    gap: 10px;
+    padding: 10px 0;
+    position: relative; /* 用于绝对定位一些元素如果Grid不够灵活 */
+    /* border: 1px solid red; */ /* 调试用 */
+}
 
-/* --- 2. 中央玩家手牌显示区 --- */
+/* 2a. 尾墩摆牌区 (右上) */
+#back-hand-pile {
+    grid-area: back-pile;
+    /* 或者使用绝对定位：
+    position: absolute;
+    top: 0; right: 15%; // 估算位置
+    */
+}
+
+/* 2b. 中央玩家手牌显示区 */
 #player-hand-cards-center-display {
-    /* .cards-container class 已应用 (flex, justify-center, align-items-center, gap) */
-    min-height: 100px; /* 手牌区高度 */
-    max-height: 120px; /* 防止过高 */
+    grid-area: center-hand;
+    min-height: 100px; max-height: 120px;
     padding: 10px;
-    background-color: rgba(139, 0, 0, 0.4); /* 暗红色背景，对应截图 */
+    background-color: rgba(80, 40, 20, 0.5); /* 暗棕红色背景 */
     border-radius: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    width: 95%; /* 宽度 */
-    max-width: 900px; /* 最大宽度 */
-    margin: 10px auto; /* 上下边距，并水平居中 */
-    flex-grow: 1; /* 让它在垂直方向上占据一定空间 */
+    overflow-x: auto; overflow-y: hidden;
+    width: 100%; /* 占据分配的grid单元格宽度 */
+    max-width: 700px; /* 限制最大宽度 */
+    display: flex; justify-content: center; align-items: center; gap: 5px;
+    /* border: 1px solid blue; */ /* 调试 */
 }
 #player-hand-cards-center-display .card {
-    position: relative;
-    transform: none !important;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-}
-#player-hand-cards-center-display .card:hover {
-    transform: translateY(-5px) scale(1.08) !important;
-    z-index: 100;
+    position: relative; transform: none !important;
 }
 
-/* --- 3. 玩家摆牌区 与 牌型分析区 (在中央手牌区下方) --- */
-#player-arrangement-and-analysis-zone {
+/* 2c. 玩家的头墩和中墩摆牌区 (左下和中下) */
+#player-lower-piles-area {
+    grid-area: lower-piles;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 15px;
-    padding: 5px 0;
-    /* margin-top: auto; */ /* 将其推到手牌区下方 */
-    /* border: 1px dashed yellow; */ /* 调试 */
+    flex-direction: column; /* 头墩在上，中墩在下 */
+    align-items: flex-start; /* 左对齐（相对于其grid单元格） */
+    gap: 8px;
+    /* border: 1px solid green; */ /* 调试 */
+    justify-self: start; /* 尝试将其推到左边 */
+    align-self: end; /* 尝试将其推到底部 */
 }
-#my-player-piles {
-    /* .piles-row class 已应用 */
+#front-hand-pile { /* 头墩 */
+    /* 定位在 player-lower-piles-area 内部 */
 }
+#middle-hand-pile { /* 中墩 */
+    /* 定位在 player-lower-piles-area 内部 */
+    /* margin-left: 50px; */ /* 简单偏移使其在中墩下方，或者调整Grid更精确 */
+}
+
+
+/* 玩家自己的牌墩通用样式 */
 .hand-pile-dropzone.player-self-pile {
     width: 90px; height: 65px;
-    background-color: rgba(0,0,0,0.25);
-    border: 2px dashed rgba(150, 200, 150, 0.6);
+    background-color: rgba(0,0,0,0.3);
+    border: 2px dashed rgba(180, 220, 180, 0.5); /* 虚线颜色更柔和 */
     padding: 4px; border-radius: 5px;
     display: flex; flex-direction: column; align-items: center;
     transition: background-color 0.2s, border-color 0.2s;
 }
-.player-self-pile .pile-label { font-size: 0.65em; color: #c0e0c0; margin-bottom: 2px;}
+.player-self-pile .pile-label { font-size: 0.6em; color: #c0e0c0; margin-bottom: 2px;}
 .player-self-pile .cards-wrapper { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; width: 100%; height: 100%; }
-.player-self-pile.drag-over { background-color: rgba(80, 150, 80, 0.3); border-color: #a0ffa0; border-style: solid; }
+.player-self-pile.drag-over { background-color: rgba(100, 180, 100, 0.3); border-color: #c0ffc0; border-style: solid; }
 
-#hand-analysis-display {
-    width: 150px;
-    padding: 6px;
+
+/* 2d. 截图右下角的小墩位概览 + 牌型分析区 */
+#arranged-piles-and-analysis-group {
+    grid-area: arranged-analysis;
+    display: flex;
+    flex-direction: column; /* 墩概览和分析上下排列 */
+    align-items: flex-start; /* 左对齐 */
+    gap: 5px;
+    padding: 5px;
     background-color: rgba(0,0,0,0.1);
-    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 4px;
-    font-size: 0.6em;
-    color: #c0d0c0;
-    align-self: center;
-    min-height: 65px;
+    justify-self: end; /* 尝试推到右边 */
+    align-self: end;   /* 尝试推到底部 */
+    /* border: 1px solid purple; */ /* 调试 */
 }
-#hand-analysis-display h4 { font-size: 1.1em; color: #e0f0e0; margin:0 0 4px 0; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 2px;}
-#hand-analysis-display p { margin-bottom: 2px; line-height: 1.2; }
-#hand-analysis-display strong { color: #ffffbb; }
-#hand-analysis-display em { font-style: normal; color: #b0b0b0; }
+.mini-pile-display {
+    font-size: 0.6em;
+    color: #aaccaa;
+    padding: 2px 4px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+    min-width: 60px; /* 给个最小宽度 */
+    text-align: left;
+}
+#hand-analysis-display {
+    width: 100%; /* 占据父容器的宽度 */
+    padding: 5px 0 0 0; /* 调整内边距 */
+    background-color: transparent; /* 背景由父容器提供 */
+    border: none;
+    font-size: 0.6em;
+    color: #b0c0b0;
+}
+#hand-analysis-display h4 { font-size: 1em; color: #d0e0d0; margin:0 0 3px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1px;}
+#hand-analysis-display p { margin-bottom: 2px; line-height: 1.1; }
 
 
 /* --- 卡牌通用样式 --- */
-.card {
-    width: 50px; height: 70px; /* 手牌区/默认卡牌尺寸 */
-    background-color: #fff;
-    border: 1px solid #777;
-    border-radius: 4px;
-    display: flex; flex-direction: column; justify-content: space-around; align-items: center;
-    padding: 3px; font-weight: bold;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    cursor: grab; user-select: none;
-    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
-}
-.card:hover { /* 通用悬浮 */
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
-    z-index: 50;
-}
-.card.dragging { opacity: 0.7; transform: rotate(2deg) scale(1.05) !important; cursor: grabbing; z-index: 1000;}
-.card .rank { font-size: 1.2em; }
-.card .suit { font-size: 1em; }
-
+/* ... (大部分卡牌样式、墩内卡牌样式与上一轮类似，可微调尺寸) ... */
+.card { width: 45px; height: 63px; /* 手牌区卡牌尺寸减小 */ }
+.card .rank { font-size: 1.1em; }
+.card .suit { font-size: 0.9em; }
+.cards-wrapper .card { width: 35px; height: 49px; /* 墩内卡牌更小 */ }
+.cards-wrapper .card .rank { font-size: 0.8em; }
+.cards-wrapper .card .suit { font-size: 0.65em; }
 .card.hearts, .card.diamonds { color: #D32F2F; }
 .card.spades, .card.clubs { color: #212121; }
 
-/* 墩内卡牌 */
-.cards-wrapper .card {
-    width: 38px; height: 52px; /* 墩内卡牌更小 */
-    cursor: default; box-shadow: 0px 1px 1px rgba(0,0,0,0.1);
-}
-.cards-wrapper .card .rank { font-size: 0.9em; }
-.cards-wrapper .card .suit { font-size: 0.75em; }
-.cards-wrapper .card:hover { transform: translateY(-1px); }
 
-/* --- 4. 底部控制面板 --- */
+/* --- 3. 底部控制面板 --- */
 #controls-panel {
-    height: 50px;
-    background-color: rgba(0,0,0,0.4);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding: 0 10px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: auto; /* 将控制面板固定在底部 */
+    height: 45px; /* 控制面板高度减小 */
+    /* ... (其他样式与上一轮类似) ... */
+    margin-top: auto; /* 固定在底部 */
 }
-.player-info { display: flex; align-items: center; gap: 12px; font-size: 0.75em; color: #e0f0e0;}
-.player-info #player-name-display { font-weight: bold; }
-#ai-托管-info { font-size: 0.85em; color: #ffdd77; font-style: italic; }
-
-.action-buttons { display: flex; gap: 6px; }
-.game-btn {
-    padding: 5px 9px; font-size: 0.7em; color: #fff;
-    background-color: #2E7D32; border: 1px solid #1B5E20;
-    border-radius: 12px; cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-.game-btn:hover { background-color: #388E3C; transform: translateY(-1px); }
-.game-btn:active { background-color: #1B5E20; transform: translateY(0); }
-.game-btn:disabled { background-color: #444; color: #888; cursor: not-allowed; }
-.game-btn.submit { background-color: #c0392b; border-color: #a03020; }
-.game-btn.submit:hover { background-color: #e74c3c; }
-#ai-托管-btn { background-color: #8e44ad; border-color: #703080; }
-#ai-suggest-btn { background-color: #f39c12; border-color: #d08000; }
-
-/* --- 消息与模态框 --- */
-#game-message-popup {
-    position: fixed; bottom: 55px; /* 调整到新的底部面板上方 */
-    background-color: rgba(10, 30, 10, 0.9); color: #d0e0d0;
-    padding: 8px 15px; border-radius: 5px; box-shadow: 0 -1px 5px rgba(0,0,0,0.2);
-    font-size: 0.85em; z-index: 1500; opacity: 0; transition: opacity 0.3s, bottom 0.3s;
-    display: none;
-}
-#game-message-popup.visible { opacity: 1; bottom: 65px; } /* 向上移动一点 */
-#game-message-popup.error { background-color: rgba(180,0,0,0.9); color: #ffdada; }
-#game-message-popup.success { background-color: rgba(0,80,0,0.9); color: #d2ffd2; }
-
-.modal-overlay {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background-color: rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center;
-    z-index: 2000;
-}
-.modal-content {
-    background-color: #2c3e50; padding: 20px 25px; border-radius: 8px;
-    border: 1px solid #34495e; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-}
-.modal-content h4 { margin-bottom: 18px; font-size: 1.1em; color: #ecf0f1; }
-.modal-content .game-btn { display: block; width: 100%; margin-bottom: 8px; }
-.modal-content .game-btn.cancel { background-color: #7f8c8d; border-color: #607070;}
-.modal-content .game-btn.cancel:hover { background-color: #95a5a6;}
+/* ... (玩家信息、按钮组、按钮样式、消息、模态框样式与上一轮类似，可微调尺寸和颜色) ... */
+.player-info { font-size: 0.7em;}
+.game-btn { padding: 4px 8px; font-size: 0.65em; border-radius: 10px;}
+#game-message-popup { bottom: 50px; font-size: 0.8em; }
