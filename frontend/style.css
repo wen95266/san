@@ -4,7 +4,7 @@ html, body {
     height: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
-    background-color: #083008; /* 深绿色桌布 */
+    background-color: #062006; /* 非常深的绿色，接近截图 */
     color: #fff;
 }
 
@@ -14,141 +14,137 @@ html, body {
     height: 100vh;
     width: 100vw;
     position: relative;
-    padding: 15px;
+    padding: 10px 20px; /* 顶部和左右边距 */
 }
 
-/* 通用牌墩行样式 */
+/* 通用牌墩行样式 (用于对手牌墩和玩家自己牌墩) */
 .piles-row {
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* 顶部对齐 */
-    gap: 15px;
-    margin-bottom: 20px;
+    align-items: flex-start;
+    gap: 10px; /* 墩之间的间距减小 */
 }
 
 /* 对手牌墩区域 */
 #opponent-piles-top {
-    /* 根据需要调整高度和样式 */
-    min-height: 100px;
+    padding-top: 10px;
+    margin-bottom: auto; /* 将其推到顶部，并让中心区域和玩家区域占据下方空间 */
+    min-height: 90px; /* 调整高度 */
 }
 .opponent-pile-slot {
-    width: 80px; /* 示例尺寸 */
-    height: 100px;
-    border: 2px solid rgba(0, 80, 0, 0.7);
-    background-color: rgba(0, 50, 0, 0.4);
-    border-radius: 8px;
+    width: 70px;
+    height: 90px;
+    border: 2px solid rgba(100, 150, 100, 0.3); /* 更柔和的边框 */
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 .opponent-pile-slot .pile-placeholder {
-    color: rgba(255,255,255,0.4);
-    font-size: 0.8em;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.75em;
 }
 
 
-/* 中心区域 - 手牌和分析 */
-#center-area {
-    flex-grow: 1;
-    position: relative; /* 为了绝对定位手牌和分析区 */
+/* 中心手牌区域 */
+#center-hand-area {
+    height: 280px; /* 固定一个大致高度给扇形手牌，根据扇形半径调整 */
     display: flex;
     justify-content: center;
-    align-items: center; /* 垂直居中手牌的“圆心” */
-    margin-bottom: 20px;
+    align-items: center; /* 确保扇形容器在此区域居中 */
+    position: relative; /* 为了 player-hand-display-arc 的绝对定位 */
 }
 
-/* 扇形手牌显示区 - 核心 */
-#player-hand-display-arc {
-    position: relative; /* 作为卡牌绝对定位的参考 */
-    width: 600px;  /* 扇形的估计宽度 */
-    height: 300px; /* 扇形的估计高度，牌会超出这个范围 */
+#player-hand-display-arc { /* 扇形容器 */
+    position: relative;
+    width: 550px;  /* 扇形大致宽度 */
+    height: 250px; /* 扇形大致高度 */
     /* border: 1px dashed yellow; */ /* 调试用 */
-    /* 这个div本身不直接显示，它的子元素（牌）会被定位 */
 }
-
 #player-hand-display-arc .card {
     position: absolute;
-    bottom: 0; /* 所有牌的基准点在扇形容器底部中心 */
+    bottom: 0px; /* 卡牌底部对齐扇形容器底部 */
     left: 50%;
-    transform-origin: center calc(100% + 150px); /* 旋转中心点在牌下方远处，形成弧形 */
-    /* JS会动态设置 transform: translateX(-50%) rotate(Zdeg); 和 z-index */
-    transition: transform 0.3s ease-out, box-shadow 0.2s; /* 平滑移动和选中效果 */
+    transform-origin: center calc(100% + 180px); /* 调整旋转中心点 (半径) */
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
 }
-/* 当卡牌被选中用于拖拽时的效果 */
 #player-hand-display-arc .card.selected-for-drag {
-    transform: translateY(-20px) scale(1.1) !important; /* !important 覆盖JS的旋转 */
-    box-shadow: 0 0 20px rgba(255, 255, 100, 0.7);
+    transform: translateY(-25px) scale(1.12) !important;
+    box-shadow: 0 0 25px rgba(255, 255, 150, 0.75);
     z-index: 1001 !important;
 }
 
 
-/* 牌型分析显示区 - 定位到右侧 */
+/* 玩家区域: 包含自己的牌墩和分析 */
+#player-zone {
+    display: flex; /* 横向排列牌墩组和分析区 */
+    justify-content: center; /* 整体居中 */
+    align-items: flex-start; /* 顶部对齐 */
+    gap: 10px;
+    padding: 10px 0;
+    margin-bottom: auto; /* 将其推到底部控制面板上方 */
+}
+
+#my-arrangement-piles { /* 玩家的三个牌墩的容器 */
+    /* .piles-row class 已应用 (flex, justify-center, gap) */
+}
+
+.hand-pile-dropzone.my-pile {
+    width: 120px; /* 墩的宽度减小，更紧凑 */
+    min-height: 85px; /* 墩的高度减小 */
+    padding: 6px;
+    border: 2px solid rgba(100, 150, 100, 0.4); /* 更柔和的边框 */
+    background-color: rgba(0, 0, 0, 0.25); /* 更深的背景 */
+    border-radius: 8px;
+}
+.hand-pile-dropzone.my-pile .pile-label {
+    font-size: 0.8em; /* 标签字体减小 */
+    color: #aaccaa; /* 标签颜色 */
+    margin-bottom: 5px;
+}
+.hand-pile-dropzone.my-pile .cards-wrapper {
+    gap: 3px; /* 墩内卡牌间距减小 */
+    min-height: 65px; /* 墩内卡牌区域高度 */
+}
+.hand-pile-dropzone.my-pile.drag-over {
+    background-color: rgba(50, 100, 50, 0.4);
+    border-color: #80c080;
+}
+
+/* 牌型分析显示区 - 紧凑 */
 #hand-analysis-display-container {
-    position: absolute;
-    right: 0px; /* 定位到#center-area的右侧 */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 200px; /* 调整宽度 */
-    padding: 10px;
-    background-color: rgba(0,0,0,0.3);
-    border-radius: 6px;
-    font-size: 0.85em;
-    max-height: 280px; /* 防止过高 */
+    width: 180px; /* 分析区宽度 */
+    padding: 8px;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid rgba(100,150,100,0.2);
+    border-radius: 5px;
+    font-size: 0.75em; /* 整体字体减小 */
+    max-height: 180px; /* 限制最大高度，与墩对齐 */
     overflow-y: auto;
-    color: #ddd;
+    color: #b0c0b0; /* 文字颜色 */
 }
 #hand-analysis-display-container h4 {
     margin-top: 0;
-    margin-bottom: 8px;
-    color: #fff;
-    font-size: 1em;
+    margin-bottom: 6px;
+    color: #d0e0d0;
+    font-size: 0.9em;
+    border-bottom: 1px solid rgba(100,150,100,0.2);
+    padding-bottom: 4px;
 }
 #hand-analysis-display-container p {
-    margin-bottom: 5px;
-    line-height: 1.4;
+    margin-bottom: 4px;
+    line-height: 1.3;
 }
-#hand-analysis-display-container strong { color: #ffc107; }
-#hand-analysis-display-container em { color: #aaa; font-style: normal; }
+#hand-analysis-display-container strong { color: #d0ffA0; } /* 高亮牌型名 */
+#hand-analysis-display-container em { color: #99a999; font-style: normal; }
 
-
-/* 玩家自己的摆牌区域 */
-#my-arrangement-area {
-    /* piles-row 已应用 */
-    align-items: stretch; /* 让列等高 */
-}
-.player-pile-column {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.hand-pile-dropzone.my-pile { /* 玩家自己的墩 */
-    width: 200px; /* 调整宽度 */
-    min-height: 100px;
-    padding: 8px;
-    border: 3px solid #005000; /* 蓝色边框改成深绿色实线 */
-    background-color: rgba(0, 70, 0, 0.5); /* 深绿色背景 */
-    border-radius: 10px; /* 更大的圆角 */
-}
-.hand-pile-dropzone.my-pile .pile-label {
-    font-size: 0.9em;
-    color: #9f9;
-    font-weight: normal;
-}
-.hand-pile-dropzone.my-pile .cards-wrapper {
-    gap: 4px;
-    min-height: 75px;
-}
-.hand-pile-dropzone.my-pile.drag-over {
-    background-color: rgba(0, 100, 0, 0.7);
-    border-color: #008000;
-}
 
 /* 卡牌样式 */
 .card {
-    width: 70px; /* 标准卡牌尺寸 */
-    height: 98px;
-    border: 1px solid #888;
+    width: 60px; /* 卡牌尺寸在扇形区 */
+    height: 84px;
+    border: 1px solid #777;
     border-radius: 7px;
     background-color: #fff;
     color: #222;
@@ -158,65 +154,74 @@ html, body {
     align-items: center;
     padding: 6px;
     font-weight: bold;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
     cursor: grab;
     user-select: none;
-    position: relative; /* 对于非扇形区的牌 */
+    position: relative; /* For non-arc cards, or if arc cards need explicit stacking context */
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; /* Added transition for hover for non-arc cards */
 }
-/* 拖拽中的牌的通用样式 */
-.card.dragging {
+.card:hover { /* General hover for cards not in arc, or as a base */
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+    z-index: 5;
+}
+.card.dragging { /* 通用拖拽样式 */
     opacity: 0.6;
-    transform: rotate(4deg) scale(1.08) !important; /* !important 覆盖其他 transform */
+    transform: rotate(4deg) scale(1.08) !important;
     cursor: grabbing;
     box-shadow: 4px 5px 10px rgba(0,0,0,0.4);
-    z-index: 2000; /* 最高层级 */
+    z-index: 2000;
 }
 .card .rank { font-size: 1.5em; }
 .card .suit { font-size: 1.3em; }
-.card.hearts, .card.diamonds { color: #D32F2F; } /* 红色 */
-.card.spades, .card.clubs { color: #111; }     /* 黑色 */
+.card.hearts, .card.diamonds { color: #D32F2F; }
+.card.spades, .card.clubs { color: #111; }
 
-/* 墩内卡牌的样式 */
+/* 墩内卡牌样式可以更小 */
 .hand-pile-dropzone .cards-wrapper .card {
-    width: 60px; /* 墩内卡牌可以小一点 */
-    height: 84px;
-    cursor: default; /* 或者 grab 如果允许从墩拖回 */
+    width: 50px;
+    height: 70px;
+    cursor: default; /* Or grab if draggable from pile */
 }
-.hand-pile-dropzone .cards-wrapper .card .rank { font-size: 1.3em; }
-.hand-pile-dropzone .cards-wrapper .card .suit { font-size: 1.1em; }
+.hand-pile-dropzone .cards-wrapper .card .rank { font-size: 1.1em; }
+.hand-pile-dropzone .cards-wrapper .card .suit { font-size: 0.9em; }
+.hand-pile-dropzone .cards-wrapper .card:hover { /* Less pronounced hover in pile */
+    transform: translateY(-1px);
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.25);
+}
 
 
 /* 底部控制面板 */
 #bottom-controls-panel {
-    height: 75px;
-    background-color: rgba(0, 20, 0, 0.7); /* 更深更透明的背景 */
-    padding: 0 20px; /* 调整内边距 */
+    height: 65px;
+    padding: 0 15px;
+    background-color: rgba(0, 10, 0, 0.8);
+    border-top: 1px solid rgba(50, 100, 50, 0.4);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 2px solid rgba(0, 80, 0, 0.5);
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 -1px 5px rgba(0,0,0,0.15);
 }
-
 .player-info-main {
     display: flex;
-    align-items: center; /* 水平对齐 */
-    gap: 10px; /* 信息项之间的间距 */
-    color: #c0e0c0; /* 浅绿色文字 */
+    align-items: center;
+    gap: 10px;
+    color: #c0e0c0;
 }
-.player-info-main .player-name { font-size: 1em; font-weight: bold; color: #fff; }
-.player-info-main .player-score { font-size: 0.9em; }
-.player-info-main .player-status { /* 状态已由JS的className控制，此处为基础 */
-    font-size: 0.8em; font-style: italic; padding: 3px 8px;
-    border-radius: 4px; color: white;
-}
-.subtle-button { /* "本局结果" 按钮样式 */
+.player-info-main .player-name { font-size: 0.95em; font-weight: bold; color: #fff; }
+.player-info-main .player-score { font-size: 0.85em; }
+.subtle-button {
     padding: 4px 8px !important;
     font-size: 0.8em !important;
-    background-image: linear-gradient(to bottom, #445, #334) !important;
-    border-color: #223 !important;
+    background-image: linear-gradient(to bottom, #3a403a, #2c302c) !important;
+    border-color: #1e221e !important;
     border-radius: 4px !important;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+    color: #a0b0a0 !important;
+}
+.subtle-button:hover {
+    background-image: linear-gradient(to bottom, #4a504a, #3c403c) !important;
+    color: #b0c0b0 !important;
 }
 
 
@@ -224,40 +229,84 @@ html, body {
     display: flex;
     gap: 10px;
 }
-.game-button { /* 按钮样式参考上一版，可微调 */
-    padding: 9px 16px;
-    font-size: 0.9em;
+.game-button {
+    padding: 8px 14px;
+    font-size: 0.85em;
     font-weight: 600;
     color: #e0ffe0;
-    background-image: linear-gradient(to bottom, #106010, #084008);
-    border: 1px solid #003000;
-    border-radius: 18px;
+    background-image: linear-gradient(to bottom, #185818, #0c380c); /* Darker green buttons */
+    border: 1px solid #002800;
+    border-radius: 16px;
     cursor: pointer;
     transition: all 0.15s ease-out;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(200,255,200,0.1);
-    text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(200,255,200,0.08);
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
 }
 .game-button:hover {
-    background-image: linear-gradient(to bottom, #187018, #105010);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(220,255,220,0.15);
+    background-image: linear-gradient(to bottom, #206820, #104810);
+    box-shadow: 0 3px 5px rgba(0,0,0,0.3), inset 0 1px 0 rgba(220,255,220,0.1);
     transform: translateY(-1px);
 }
-/* ... 其他按钮状态和特殊按钮样式可以沿用或调整 ... */
+.game-button:active {
+    transform: translateY(0px);
+    background-image: linear-gradient(to bottom, #104810, #083008);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(0,0,0,0.05);
+}
+.game-button:disabled {
+    background-image: linear-gradient(to bottom, #333833, #292d29);
+    border-color: #1f231f;
+    color: #707870;
+    cursor: not-allowed;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    text-shadow: none;
+}
 .game-button.submit-style {
-    background-image: linear-gradient(to bottom, #28a745, #1e7e34);
-    border-color: #155724;
+    background-image: linear-gradient(to bottom, #4CAF50, #388E3C);
+    border-color: #2E7D32;
+}
+.game-button.submit-style:hover {
+    background-image: linear-gradient(to bottom, #5cb85c, #45a049);
+}
+#ai-suggest-button {
+    background-image: linear-gradient(to bottom, #f0ad4e, #ec971f);
+    border-color: #d58512;
+    color: #fff;
+}
+#ai-suggest-button:hover {
+    background-image: linear-gradient(to bottom, #f3b964, #eea236);
 }
 
-/* 消息浮层 (保持或微调) */
+
+/* 消息浮层 */
 #game-message-overlay {
     position: fixed;
-    bottom: 90px; /* 调整位置 */
+    bottom: 75px;
     left: 50%;
     transform: translateX(-50%) translateY(100%);
-    /* ... 其他样式与上一版类似 ... */
-    background-color: rgba(0, 10, 0, 0.88);
+    background-color: rgba(0, 5, 0, 0.9);
+    color: #c0d0c0;
     padding: 10px 18px;
-    font-size: 0.95em;
-    border-top: 2px solid rgba(0,80,0,0.6);
+    border-radius: 5px;
+    box-shadow: 0 -1px 8px rgba(0,0,0,0.3);
+    z-index: 1001;
+    font-size: 0.9em;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-out, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
 }
-/* ... .visible, .error 样式 ... */
+#game-message-overlay.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0%);
+}
+#game-message-overlay.error {
+    background-color: rgba(139, 0, 0, 0.9); /* DarkRed */
+    color: #ffd2d2;
+}
+#game-message-overlay.success {
+    background-color: rgba(0, 70, 0, 0.9); /* DarkGreen */
+    color: #d2ffd2;
+}
+#game-message-overlay #game-message {
+    margin: 0;
+}
